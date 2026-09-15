@@ -713,8 +713,9 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
 <script>
-  var _0x3a2b = ["https://script.google.com/macros/s/AKfycbyKawXyJ7mSVy8FvEkhgG7CTGVv2Mo0g51obPw2mK26goglsDBnPfKuKOrBzG65yDmFKw/exec", "radar_user_email", "vendas_radar_", "historico_radar_", "radar_theme", "radar_user_nome", "radar_user_empresa", "radar_session_token"];
+  var _0x3a2b =["https://script.google.com/macros/s/AKfycbyKawXyJ7mSVy8FvEkhgG7CTGVv2Mo0g51obPw2mK26goglsDBnPfKuKOrBzG65yDmFKw/exec", "radar_user_email", "vendas_radar_", "historico_radar_", "radar_theme", "radar_user_nome", "radar_user_empresa", "radar_session_token"];
   const API_NUVEM_URL = _0x3a2b[0];
   let vendas = [];
   let historicoMeses = [];
@@ -1521,26 +1522,82 @@
     calcularMeta(); calcularDesconto();
   }
 
-  // FUNÇÕES DE EXPORTAÇÃO PARA EXCEL (CSV) COM O NOVO LAYOUT PADRONIZADO E VÍRGULA EM PERCENTUAIS
-  function baixarArquivoCSV(nomeArquivo, conteudoCsv) {
-    const blob = new Blob(["\uFEFF" + conteudoCsv], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", nomeArquivo);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  // FUNÇÕES DE EXPORTAÇÃO PARA EXCEL (.XLSX) COM FORMATAÇÃO (NEGRITO, MOEDA, DATA)
+  const FORMATO_MOEDA_XLSX = '[$R$-416]\\ #,##0.00';
+  const FORMATO_DATA_XLSX = 'dd/mm/yyyy';
+  const ESTILO_NEGRITO = { font: { bold: true } };
+
+  function converterDataIsoParaExcel(dataIso) {
+    if (!dataIso) return null;
+    const partes = String(dataIso).split('T')[0].split('-');
+    if (partes.length < 3) return null;
+    const ano = parseInt(partes[0], 10), mes = parseInt(partes[1], 10), dia = parseInt(partes[2], 10);
+    if (!ano || !mes || !dia) return null;
+    return new Date(Date.UTC(ano, mes - 1, dia));
   }
 
-  function gerarCabecalhoComumCsv(nomeRelatorio) {
-    const dataHoraGeracao = new Date().toLocaleString('pt-BR');
-    let csv = `${nomeRelatorio}\n`;
-    csv += `${usuarioNome};${usuarioEmail}\n`;
-    csv += `${usuarioEmpresa}\n`;
-    csv += `Gerado em:;${dataHoraGeracao}\n\n`;
-    return csv;
+  function parseTaxaConversaoPercentual(str) {
+    if (!str) return null;
+    const num = parseFloat(String(str).replace('%', '').replace(',', '.').trim());
+    return isNaN(num) ? null : num;
+  }
+
+  // Monta e baixa um .xlsx com cabeçalho e total em negrito, moeda e data formatadas.
+  function gerarExcelRelatorio(config) {
+    const { nomeRelatorio, infoLinhas, kpis, colunas, linhas, totalLinha, nomeArquivo } = config;
+
+    const aoa = [];
+    aoa.push([nomeRelatorio]);
+    infoLinhas.forEach(linha => aoa.push(linha));
+    aoa.push([]);
+
+    const linhaKpis = [];
+    kpis.forEach(k => { linhaKpis.push(k.label); linhaKpis.push(k.valor); linhaKpis.push(''); });
+    aoa.push(linhaKpis);
+    aoa.push([]);
+
+    const linhaCabecalhoIdx = aoa.length;
+    aoa.push(colunas.map(c => c.titulo));
+
+    const linhaDadosInicioIdx = aoa.length;
+    linhas.forEach(linha => aoa.push(linha));
+
+    let linhaTotalIdx = -1;
+    if (totalLinha) {
+      linhaTotalIdx = aoa.length;
+      aoa.push(totalLinha);
+    }
+
+    const ws = XLSX.utils.aoa_to_sheet(aoa, { cellDates: true });
+
+    for (let c = 0; c < colunas.length; c++) {
+      const ref = XLSX.utils.encode_cell({ r: linhaCabecalhoIdx, c });
+      if (ws[ref]) ws[ref].s = ESTILO_NEGRITO;
+    }
+
+    colunas.forEach((col, c) => {
+      for (let r = linhaDadosInicioIdx; r < linhaDadosInicioIdx + linhas.length; r++) {
+        const cell = ws[XLSX.utils.encode_cell({ r, c })];
+        if (!cell) continue;
+        if (col.tipo === 'moeda' && cell.t === 'n') cell.z = FORMATO_MOEDA_XLSX;
+        if (col.tipo === 'data' && cell.t === 'd') cell.z = FORMATO_DATA_XLSX;
+      }
+    });
+
+    if (linhaTotalIdx >= 0) {
+      colunas.forEach((col, c) => {
+        const cell = ws[XLSX.utils.encode_cell({ r: linhaTotalIdx, c })];
+        if (!cell) return;
+        cell.s = ESTILO_NEGRITO;
+        if (col.tipo === 'moeda' && cell.t === 'n') cell.z = FORMATO_MOEDA_XLSX;
+      });
+    }
+
+    ws['!cols'] = colunas.map(col => ({ wch: col.largura || 16 }));
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Relatório');
+    XLSX.writeFile(wb, nomeArquivo);
   }
 
   function exportarRelatorioParcialExcel() {
@@ -1558,23 +1615,41 @@
     const comissaoTotal = vendas.reduce((acc, v) => acc + v.comissao, 0);
     const ticketMedio = qtdTotal > 0 ? faturamentoTotal / qtdTotal : 0;
     const taxaConv = document.getElementById('radar-taxa-conversao').innerText;
-    
+
     let somaPct = vendas.reduce((acc, v) => acc + v.porcentagem, 0);
     const mediaPctComissao = qtdTotal > 0 ? (somaPct / qtdTotal).toFixed(2).replace('.', ',') + '%' : '0,0%';
 
-    let csv = gerarCabecalhoComumCsv(nomeRelatorio);
-
-    csv += `TICKET MEDIO:;${ticketMedio.toFixed(2).replace('.', ',')}; ;TAXA DE CONVERSAO:;${taxaConv}; ;MEDIA DE COMISSAO (%):;${mediaPctComissao}\n\n`;
-
-    csv += "Data;Cliente;Valor da Venda (R$);Comissao (%);Sua Comissao (R$);Status\n";
-    vendas.forEach(v => {
-      const pctFormatado = String(v.porcentagem).replace('.', ',');
-      csv += `${formatarDataBR(v.dataVenda)};"${v.cliente}";${v.valor.toFixed(2).replace('.', ',')};${pctFormatado};${v.comissao.toFixed(2).replace('.', ',')};${v.status}\n`;
+    gerarExcelRelatorio({
+      nomeRelatorio,
+      infoLinhas: [
+        [usuarioNome, usuarioEmail],
+        [usuarioEmpresa],
+        ['Gerado em:', new Date().toLocaleString('pt-BR')]
+      ],
+      kpis: [
+        { label: 'TICKET MEDIO', valor: formatarMoeda(ticketMedio) },
+        { label: 'TAXA DE CONVERSAO', valor: taxaConv },
+        { label: 'MEDIA DE COMISSAO (%)', valor: mediaPctComissao }
+      ],
+      colunas: [
+        { titulo: 'Data', tipo: 'data', largura: 12 },
+        { titulo: 'Cliente', tipo: 'texto', largura: 28 },
+        { titulo: 'Valor da Venda (R$)', tipo: 'moeda', largura: 18 },
+        { titulo: 'Comissao (%)', tipo: 'texto', largura: 14 },
+        { titulo: 'Sua Comissao (R$)', tipo: 'moeda', largura: 18 },
+        { titulo: 'Status', tipo: 'texto', largura: 12 }
+      ],
+      linhas: vendas.map(v => [
+        converterDataIsoParaExcel(v.dataVenda) || v.dataVenda || '-',
+        v.cliente,
+        v.valor,
+        String(v.porcentagem).replace('.', ','),
+        v.comissao,
+        v.status
+      ]),
+      totalLinha: ['TOTAL GERAL', '', faturamentoTotal, '', comissaoTotal, `Qtde. Lançamentos: ${vendas.length}`],
+      nomeArquivo: `Relatorio_Parcial_${nomeMesAtual}.xlsx`
     });
-
-    csv += `TOTAL GERAL;;${faturamentoTotal.toFixed(2).replace('.', ',')};;${comissaoTotal.toFixed(2).replace('.', ',')};Qtde. Lançamentos: ${vendas.length}\n`;
-
-    baixarArquivoCSV(`Relatorio_Parcial_${nomeMesAtual}.csv`, csv);
   }
 
   function exportarRelatorioPendenciasExcel() {
@@ -1587,23 +1662,39 @@
     const faturamentoPend = pendentes.reduce((acc, v) => acc + v.valor, 0);
     const comissaoPendTotal = pendentes.reduce((acc, v) => acc + v.comissao, 0);
     const ticketPend = pendentes.length > 0 ? faturamentoPend / pendentes.length : 0;
-    
+
     let somaPctP = pendentes.reduce((acc, v) => acc + v.porcentagem, 0);
     const mediaPctPend = pendentes.length > 0 ? (somaPctP / pendentes.length).toFixed(2).replace('.', ',') + '%' : '0,0%';
 
-    let csv = gerarCabecalhoComumCsv("Relatório de Pendências");
-
-    csv += `TICKET MEDIO:;${ticketPend.toFixed(2).replace('.', ',')}; ;TAXA DE CONVERSAO:;-; ;MEDIA DE COMISSAO (%):;${mediaPctPend}\n\n`;
-
-    csv += "Data;Cliente;Valor da Venda (R$);Comissao a Receber (R$);Status\n";
-    pendentes.forEach(v => {
-      const pctFormatado = String(v.porcentagem).replace('.', ',');
-      csv += `${formatarDataBR(v.dataVenda)};"${v.cliente}";${v.valor.toFixed(2).replace('.', ',')};${v.comissao.toFixed(2).replace('.', ',')};${v.status}\n`;
+    gerarExcelRelatorio({
+      nomeRelatorio: "Relatório de Pendências",
+      infoLinhas: [
+        [usuarioNome, usuarioEmail],
+        [usuarioEmpresa],
+        ['Gerado em:', new Date().toLocaleString('pt-BR')]
+      ],
+      kpis: [
+        { label: 'TICKET MEDIO', valor: formatarMoeda(ticketPend) },
+        { label: 'TAXA DE CONVERSAO', valor: '-' },
+        { label: 'MEDIA DE COMISSAO (%)', valor: mediaPctPend }
+      ],
+      colunas: [
+        { titulo: 'Data', tipo: 'data', largura: 12 },
+        { titulo: 'Cliente', tipo: 'texto', largura: 28 },
+        { titulo: 'Valor da Venda (R$)', tipo: 'moeda', largura: 18 },
+        { titulo: 'Comissao a Receber (R$)', tipo: 'moeda', largura: 20 },
+        { titulo: 'Status', tipo: 'texto', largura: 12 }
+      ],
+      linhas: pendentes.map(v => [
+        converterDataIsoParaExcel(v.dataVenda) || v.dataVenda || '-',
+        v.cliente,
+        v.valor,
+        v.comissao,
+        v.status
+      ]),
+      totalLinha: ['TOTAL PENDENTE', '', faturamentoPend, comissaoPendTotal, `Qtde. Lançamentos: ${pendentes.length}`],
+      nomeArquivo: 'Relatorio_Pendencias.xlsx'
     });
-
-    csv += `TOTAL PENDENTE;;${faturamentoPend.toFixed(2).replace('.', ',')};${comissaoPendTotal.toFixed(2).replace('.', ',')};Qtde. Lançamentos: ${pendentes.length}\n`;
-
-    baixarArquivoCSV("Relatorio_Pendencias.csv", csv);
   }
 
   function abrirModalRelatorioMensal() {
@@ -1635,7 +1726,7 @@
 
   function gerarRelatorioMensalSelecionado() {
     const selecionados = Array.from(document.querySelectorAll('.check-mes-item:checked')).map(chk => chk.value);
-    
+
     if (selecionados.length === 0) {
       alert("Selecione pelo menos um mês fechado para gerar o relatório.");
       return;
@@ -1645,12 +1736,14 @@
 
     const nomeRelatorio = selecionados.length > 1 ? "Relatório Mensal - Consolidado" : `Relatório Mensal - ${selecionados[0]}`;
 
+    const mesesSelecionados = historicoMeses.filter(h => selecionados.includes(h.refMes));
+
     let todasVendasHistorico = [];
     let faturamentoTotalHist = 0;
     let comissaoTotalHist = 0;
     let totalQtdVendas = 0;
 
-    historicoMeses.filter(h => selecionados.includes(h.refMes)).forEach(h => {
+    mesesSelecionados.forEach(h => {
       if (h.vendasDetalhes && h.vendasDetalhes.length > 0) {
         h.vendasDetalhes.forEach(vd => {
           todasVendasHistorico.push({
@@ -1673,19 +1766,45 @@
     let somaPctHist = todasVendasHistorico.reduce((acc, v) => acc + v.porcentagem, 0);
     const mediaPctHist = totalQtdVendas > 0 ? (somaPctHist / totalQtdVendas).toFixed(2).replace('.', ',') + '%' : '0,0%';
 
-    let csv = gerarCabecalhoComumCsv(nomeRelatorio);
+    // Média da taxa de conversão de todos os meses selecionados (1 mês = a própria taxa dele)
+    const taxasConversaoValidas = mesesSelecionados.map(h => parseTaxaConversaoPercentual(h.taxaConversao)).filter(v => v !== null);
+    const taxaConversaoMediaExibicao = taxasConversaoValidas.length > 0
+      ? (taxasConversaoValidas.reduce((a, b) => a + b, 0) / taxasConversaoValidas.length).toFixed(1).replace('.', ',') + '%'
+      : '-';
 
-    csv += `TICKET MEDIO:;${ticketMedioHist.toFixed(2).replace('.', ',')}; ;TAXA DE CONVERSAO:;Consolidado; ;MEDIA DE COMISSAO (%):;${mediaPctHist}\n\n`;
-
-    csv += "Mes Referencia;Data;Cliente;Valor da Venda (R$);Comissao (%);Sua Comissao (R$);Status\n";
-    todasVendasHistorico.forEach(v => {
-      const pctFormatado = String(v.porcentagem).replace('.', ',');
-      csv += `"${v.mesRef}";${formatarDataBR(v.dataVenda)};"${v.cliente}";${v.valor.toFixed(2).replace('.', ',')};${pctFormatado};${v.comissao.toFixed(2).replace('.', ',')};${v.status}\n`;
+    gerarExcelRelatorio({
+      nomeRelatorio,
+      infoLinhas: [
+        [usuarioNome, usuarioEmail],
+        [usuarioEmpresa],
+        ['Gerado em:', new Date().toLocaleString('pt-BR')]
+      ],
+      kpis: [
+        { label: 'TICKET MEDIO', valor: formatarMoeda(ticketMedioHist) },
+        { label: 'TAXA DE CONVERSAO MEDIA', valor: taxaConversaoMediaExibicao },
+        { label: 'MEDIA DE COMISSAO (%)', valor: mediaPctHist }
+      ],
+      colunas: [
+        { titulo: 'Mes Referencia', tipo: 'texto', largura: 18 },
+        { titulo: 'Data', tipo: 'data', largura: 12 },
+        { titulo: 'Cliente', tipo: 'texto', largura: 28 },
+        { titulo: 'Valor da Venda (R$)', tipo: 'moeda', largura: 18 },
+        { titulo: 'Comissao (%)', tipo: 'texto', largura: 14 },
+        { titulo: 'Sua Comissao (R$)', tipo: 'moeda', largura: 18 },
+        { titulo: 'Status', tipo: 'texto', largura: 12 }
+      ],
+      linhas: todasVendasHistorico.map(v => [
+        v.mesRef,
+        converterDataIsoParaExcel(v.dataVenda) || v.dataVenda || '-',
+        v.cliente,
+        v.valor,
+        String(v.porcentagem).replace('.', ','),
+        v.comissao,
+        v.status
+      ]),
+      totalLinha: ['TOTAL HISTORICO', '', '', faturamentoTotalHist, '', comissaoTotalHist, `Qtde. Lançamentos: ${totalQtdVendas}`],
+      nomeArquivo: `${nomeRelatorio.replace(/[^a-zA-Z0-9]/g, '_')}.xlsx`
     });
-
-    csv += `TOTAL HISTORICO;;;${faturamentoTotalHist.toFixed(2).replace('.', ',')};;${comissaoTotalHist.toFixed(2).replace('.', ',')};Qtde. Lançamentos: ${totalQtdVendas}\n`;
-
-    baixarArquivoCSV(`${nomeRelatorio.replace(/[^a-zA-Z0-9]/g, '_')}.csv`, csv);
   }
 
   function calcularDiasUteisRestantesAutomatico() {

@@ -1,11 +1,12 @@
-const CACHE_NAME = 'radar-vendedor-rico-v1';
+const CACHE_NAME = 'radar-vendedor-rico-v2';
 const urlsToCache = [
   '/radar-vendedor-rico-pro/',
   '/radar-vendedor-rico-pro/index.html',
   '/radar-vendedor-rico-pro/manifest.json',
   '/radar-vendedor-rico-pro/logo-customizada.png',
   '/radar-vendedor-rico-pro/icon-192.png',
-  '/radar-vendedor-rico-pro/icon-512.png'
+  '/radar-vendedor-rico-pro/icon-512.png',
+  'https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js'
 ];
 
 self.addEventListener('install', (event) => {
