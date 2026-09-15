@@ -714,13 +714,14 @@
 </div>
 
 <script>
-  var _0x3a2b = ["https://script.google.com/macros/s/AKfycbyKawXyJ7mSVy8FvEkhgG7CTGVv2Mo0g51obPw2mK26goglsDBnPfKuKOrBzG65yDmFKw/exec", "radar_user_email", "vendas_radar_", "historico_radar_", "radar_theme", "radar_user_nome", "radar_user_empresa"];
-  const API_NUVEM_URL = _0x3a2b[0]; 
+  var _0x3a2b = ["https://script.google.com/macros/s/AKfycbyKawXyJ7mSVy8FvEkhgG7CTGVv2Mo0g51obPw2mK26goglsDBnPfKuKOrBzG65yDmFKw/exec", "radar_user_email", "vendas_radar_", "historico_radar_", "radar_theme", "radar_user_nome", "radar_user_empresa", "radar_session_token"];
+  const API_NUVEM_URL = _0x3a2b[0];
   let vendas = [];
   let historicoMeses = [];
   let selecionadosMass = new Set();
   let deferredPrompt = null;
   let usuarioEmail = "";
+  let usuarioToken = "";
   let usuarioNome = "";
   let usuarioEmpresa = "";
   let newWorker = null;
@@ -753,7 +754,9 @@
 
   function fazerLogout() {
     localStorage.removeItem(_0x3a2b[1]);
+    localStorage.removeItem(_0x3a2b[7]);
     usuarioEmail = "";
+    usuarioToken = "";
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('app-main-content').style.display = 'none';
     const topbar = document.getElementById('mobile-topbar-header');
@@ -808,20 +811,15 @@
 
   document.addEventListener("DOMContentLoaded", () => {
     carregarTemaSalvo();
-    const urlParams = new URLSearchParams(window.location.search);
-    const emailUrl = urlParams.get('aluno_id') || urlParams.get('user_id') || urlParams.get('email');
 
-    if (emailUrl && emailUrl.trim() !== '' && !emailUrl.includes('#')) {
-      usuarioEmail = emailUrl.trim().toLowerCase();
-    } else {
-      usuarioEmail = localStorage.getItem(_0x3a2b[1]) || "";
-    }
+    usuarioEmail = localStorage.getItem(_0x3a2b[1]) || "";
+    usuarioToken = localStorage.getItem(_0x3a2b[7]) || "";
 
     usuarioNome = localStorage.getItem(_0x3a2b[5]) || "Usuário PRO";
     usuarioEmpresa = localStorage.getItem(_0x3a2b[6]) || "";
 
-    if (usuarioEmail && usuarioEmail.includes('@')) {
-      validarEmailNuvem(usuarioEmail, true);
+    if (usuarioEmail && usuarioEmail.includes('@') && usuarioToken) {
+      validarSessaoNuvem(usuarioEmail, usuarioToken);
     } else {
       bloquearAcesso();
     }
@@ -841,7 +839,9 @@
 
   function bloquearAcesso() {
     localStorage.removeItem(_0x3a2b[1]);
+    localStorage.removeItem(_0x3a2b[7]);
     usuarioEmail = "";
+    usuarioToken = "";
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('app-main-content').style.display = 'none';
     const topbar = document.getElementById('mobile-topbar-header');
@@ -874,7 +874,9 @@
       if (data.autorizado) {
         tentativasSenha = 0;
         usuarioEmail = email;
+        usuarioToken = data.token || "";
         localStorage.setItem(_0x3a2b[1], usuarioEmail);
+        localStorage.setItem(_0x3a2b[7], usuarioToken);
         concluirLoginSucesso();
       } else {
         if (data.erro === "Senha incorreta.") {
@@ -1017,30 +1019,20 @@
     });
   }
 
-  function validarEmailNuvem(email, ehAutoLogin) {
-    fetch(API_NUVEM_URL + "?action=validar_aluno&email=" + encodeURIComponent(email), { redirect: 'follow' })
+  function validarSessaoNuvem(email, token) {
+    fetch(API_NUVEM_URL + "?action=validar_sessao&email=" + encodeURIComponent(email) + "&token=" + encodeURIComponent(token), { redirect: 'follow' })
       .then(res => res.json())
       .then(data => {
         if (data && data.autorizado === true) {
           usuarioEmail = email;
-          localStorage.setItem(_0x3a2b[1], usuarioEmail);
-          
-          if (!data.temSenha) {
-            document.getElementById('auth-screen').style.display = 'flex';
-            document.getElementById('group-login').style.display = 'none';
-            document.getElementById('group-criacao-senha').style.display = 'flex';
-            document.getElementById('auth-subtitle').innerText = "Primeiro acesso! Defina sua senha pessoal:";
-          } else {
-            concluirLoginSucesso();
-          }
+          usuarioToken = token;
+          concluirLoginSucesso();
         } else {
           bloquearAcesso();
-          if (!ehAutoLogin) exibirMensagemAuth("Usuário não localizado na base da Eduzz.", "msg-error", true);
         }
       })
       .catch(err => {
         bloquearAcesso();
-        if (!ehAutoLogin) exibirMensagemAuth("Erro ao conectar à API.", "msg-error", false);
       });
   }
 
@@ -1082,6 +1074,7 @@
     const payload = {
       action: "salvar_onboarding",
       email: usuarioEmail,
+      token: usuarioToken,
       nome: usuarioNome,
       telefone: document.getElementById('ob-telefone').value,
       cidade: document.getElementById('ob-cidade').value,
@@ -1130,7 +1123,7 @@
   function executarRetornarVendas() {
     if (!usuarioEmail) return;
     if (confirm("Deseja retornar para o radar as vendas do mês corrente que estavam com exclusão ativa?")) {
-      fetch(API_NUVEM_URL + '?action=retornar_vendas_excluidas&usuario_id=' + encodeURIComponent(usuarioEmail), { redirect: 'follow' })
+      fetch(API_NUVEM_URL + '?action=retornar_vendas_excluidas&usuario_id=' + encodeURIComponent(usuarioEmail) + '&token=' + encodeURIComponent(usuarioToken), { redirect: 'follow' })
         .then(res => res.json())
         .then(data => {
           if (data && data.vendas) {
@@ -1146,7 +1139,7 @@
   function executarRestaurarHistorico() {
     if (!usuarioEmail) return;
     if (confirm("Deseja restaurar para o aplicativo os relatórios de meses anteriores excluídos?")) {
-      fetch(API_NUVEM_URL + '?action=restaurar_historico_excluido&usuario_id=' + encodeURIComponent(usuarioEmail), { redirect: 'follow' })
+      fetch(API_NUVEM_URL + '?action=restaurar_historico_excluido&usuario_id=' + encodeURIComponent(usuarioEmail) + '&token=' + encodeURIComponent(usuarioToken), { redirect: 'follow' })
         .then(res => res.json())
         .then(data => {
           if (data && data.historico) {
@@ -1165,7 +1158,7 @@
     localStorage.setItem(_0x3a2b[2] + usuarioEmail, JSON.stringify(payloadVendas));
 
     if (API_NUVEM_URL) {
-      let bodyData = { vendas: payloadVendas, usuario_id: usuarioEmail };
+      let bodyData = { vendas: payloadVendas, usuario_id: usuarioEmail, token: usuarioToken };
       if (dadosFechamentoExtra) {
         bodyData.fechar_mes = dadosFechamentoExtra.fechar_mes;
         bodyData.vendasRestantes = dadosFechamentoExtra.vendasRestantes;
@@ -1182,7 +1175,7 @@
 
   function carregarVendasNuvemSilencioso(callback) {
     if (API_NUVEM_URL && usuarioEmail) {
-      fetch(API_NUVEM_URL + '?usuario_id=' + encodeURIComponent(usuarioEmail), { redirect: 'follow' })
+      fetch(API_NUVEM_URL + '?usuario_id=' + encodeURIComponent(usuarioEmail) + '&token=' + encodeURIComponent(usuarioToken), { redirect: 'follow' })
         .then(res => res.json())
         .then(data => {
           if (data && data.vendas) {
@@ -1197,7 +1190,7 @@
 
   function carregarHistoricoNuvemSilencioso(callback) {
     if (API_NUVEM_URL && usuarioEmail) {
-      fetch(API_NUVEM_URL + '?action=buscar_historico&usuario_id=' + encodeURIComponent(usuarioEmail), { redirect: 'follow' })
+      fetch(API_NUVEM_URL + '?action=buscar_historico&usuario_id=' + encodeURIComponent(usuarioEmail) + '&token=' + encodeURIComponent(usuarioToken), { redirect: 'follow' })
         .then(res => res.json())
         .then(data => {
           if (data && data.historico) {
@@ -1283,7 +1276,7 @@
         fetch(API_NUVEM_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ excluir_mes_ref: refMes, usuario_id: usuarioEmail }),
+          body: JSON.stringify({ excluir_mes_ref: refMes, usuario_id: usuarioEmail, token: usuarioToken }),
           redirect: 'follow'
         }).catch(err => console.log('Erro ao excluir mês da nuvem:', err));
       }
