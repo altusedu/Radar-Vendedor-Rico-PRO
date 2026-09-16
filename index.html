@@ -1525,6 +1525,7 @@
   // FUNÇÕES DE EXPORTAÇÃO PARA EXCEL (.XLSX) COM FORMATAÇÃO (NEGRITO, MOEDA, DATA)
   const FORMATO_MOEDA_XLSX = '[$R$-416]\\ #,##0.00';
   const FORMATO_DATA_XLSX = 'dd/mm/yyyy';
+  const FORMATO_PERCENTUAL_XLSX = '0,00';
   const ESTILO_NEGRITO = { font: { bold: true } };
 
   function converterDataIsoParaExcel(dataIso) {
@@ -1551,6 +1552,7 @@
     infoLinhas.forEach(linha => aoa.push(linha));
     aoa.push([]);
 
+    const linhaKpiIdx = aoa.length;
     const linhaKpis = [];
     kpis.forEach(k => { linhaKpis.push(k.label); linhaKpis.push(k.valor); linhaKpis.push(''); });
     aoa.push(linhaKpis);
@@ -1570,6 +1572,12 @@
 
     const ws = XLSX.utils.aoa_to_sheet(aoa, { cellDates: true });
 
+    kpis.forEach((k, i) => {
+      if (k.tipo !== 'percentual') return;
+      const cell = ws[XLSX.utils.encode_cell({ r: linhaKpiIdx, c: i * 3 + 1 })];
+      if (cell && cell.t === 'n') cell.z = FORMATO_PERCENTUAL_XLSX;
+    });
+
     for (let c = 0; c < colunas.length; c++) {
       const ref = XLSX.utils.encode_cell({ r: linhaCabecalhoIdx, c });
       if (ws[ref]) ws[ref].s = ESTILO_NEGRITO;
@@ -1581,6 +1589,7 @@
         if (!cell) continue;
         if (col.tipo === 'moeda' && cell.t === 'n') cell.z = FORMATO_MOEDA_XLSX;
         if (col.tipo === 'data' && cell.t === 'd') cell.z = FORMATO_DATA_XLSX;
+        if (col.tipo === 'percentual' && cell.t === 'n') cell.z = FORMATO_PERCENTUAL_XLSX;
       }
     });
 
@@ -1590,6 +1599,7 @@
         if (!cell) return;
         cell.s = ESTILO_NEGRITO;
         if (col.tipo === 'moeda' && cell.t === 'n') cell.z = FORMATO_MOEDA_XLSX;
+        if (col.tipo === 'percentual' && cell.t === 'n') cell.z = FORMATO_PERCENTUAL_XLSX;
       });
     }
 
@@ -1614,10 +1624,11 @@
     const faturamentoTotal = vendas.reduce((acc, v) => acc + v.valor, 0);
     const comissaoTotal = vendas.reduce((acc, v) => acc + v.comissao, 0);
     const ticketMedio = qtdTotal > 0 ? faturamentoTotal / qtdTotal : 0;
-    const taxaConv = document.getElementById('radar-taxa-conversao').innerText;
+    const taxaConvTexto = document.getElementById('radar-taxa-conversao').innerText;
+    const taxaConvNum = parseTaxaConversaoPercentual(taxaConvTexto);
 
     let somaPct = vendas.reduce((acc, v) => acc + v.porcentagem, 0);
-    const mediaPctComissao = qtdTotal > 0 ? (somaPct / qtdTotal).toFixed(2).replace('.', ',') + '%' : '0,0%';
+    const mediaPctComissaoNum = qtdTotal > 0 ? (somaPct / qtdTotal) : 0;
 
     gerarExcelRelatorio({
       nomeRelatorio,
@@ -1628,14 +1639,14 @@
       ],
       kpis: [
         { label: 'TICKET MEDIO', valor: formatarMoeda(ticketMedio) },
-        { label: 'TAXA DE CONVERSAO', valor: taxaConv },
-        { label: 'MEDIA DE COMISSAO (%)', valor: mediaPctComissao }
+        { label: 'TAXA DE CONVERSAO', valor: taxaConvNum !== null ? taxaConvNum : taxaConvTexto, tipo: taxaConvNum !== null ? 'percentual' : 'texto' },
+        { label: 'MEDIA DE COMISSAO (%)', valor: mediaPctComissaoNum, tipo: 'percentual' }
       ],
       colunas: [
         { titulo: 'Data', tipo: 'data', largura: 12 },
         { titulo: 'Cliente', tipo: 'texto', largura: 28 },
         { titulo: 'Valor da Venda (R$)', tipo: 'moeda', largura: 18 },
-        { titulo: 'Comissao (%)', tipo: 'texto', largura: 14 },
+        { titulo: 'Comissao (%)', tipo: 'percentual', largura: 14 },
         { titulo: 'Sua Comissao (R$)', tipo: 'moeda', largura: 18 },
         { titulo: 'Status', tipo: 'texto', largura: 12 }
       ],
@@ -1643,7 +1654,7 @@
         converterDataIsoParaExcel(v.dataVenda) || v.dataVenda || '-',
         v.cliente,
         v.valor,
-        String(v.porcentagem).replace('.', ','),
+        v.porcentagem,
         v.comissao,
         v.status
       ]),
@@ -1664,7 +1675,7 @@
     const ticketPend = pendentes.length > 0 ? faturamentoPend / pendentes.length : 0;
 
     let somaPctP = pendentes.reduce((acc, v) => acc + v.porcentagem, 0);
-    const mediaPctPend = pendentes.length > 0 ? (somaPctP / pendentes.length).toFixed(2).replace('.', ',') + '%' : '0,0%';
+    const mediaPctPendNum = pendentes.length > 0 ? (somaPctP / pendentes.length) : 0;
 
     gerarExcelRelatorio({
       nomeRelatorio: "Relatório de Pendências",
@@ -1676,7 +1687,7 @@
       kpis: [
         { label: 'TICKET MEDIO', valor: formatarMoeda(ticketPend) },
         { label: 'TAXA DE CONVERSAO', valor: '-' },
-        { label: 'MEDIA DE COMISSAO (%)', valor: mediaPctPend }
+        { label: 'MEDIA DE COMISSAO (%)', valor: mediaPctPendNum, tipo: 'percentual' }
       ],
       colunas: [
         { titulo: 'Data', tipo: 'data', largura: 12 },
@@ -1764,13 +1775,13 @@
 
     const ticketMedioHist = totalQtdVendas > 0 ? faturamentoTotalHist / totalQtdVendas : 0;
     let somaPctHist = todasVendasHistorico.reduce((acc, v) => acc + v.porcentagem, 0);
-    const mediaPctHist = totalQtdVendas > 0 ? (somaPctHist / totalQtdVendas).toFixed(2).replace('.', ',') + '%' : '0,0%';
+    const mediaPctHistNum = totalQtdVendas > 0 ? (somaPctHist / totalQtdVendas) : 0;
 
     // Média da taxa de conversão de todos os meses selecionados (1 mês = a própria taxa dele)
     const taxasConversaoValidas = mesesSelecionados.map(h => parseTaxaConversaoPercentual(h.taxaConversao)).filter(v => v !== null);
-    const taxaConversaoMediaExibicao = taxasConversaoValidas.length > 0
-      ? (taxasConversaoValidas.reduce((a, b) => a + b, 0) / taxasConversaoValidas.length).toFixed(1).replace('.', ',') + '%'
-      : '-';
+    const taxaConversaoMediaNum = taxasConversaoValidas.length > 0
+      ? (taxasConversaoValidas.reduce((a, b) => a + b, 0) / taxasConversaoValidas.length)
+      : null;
 
     gerarExcelRelatorio({
       nomeRelatorio,
@@ -1781,15 +1792,15 @@
       ],
       kpis: [
         { label: 'TICKET MEDIO', valor: formatarMoeda(ticketMedioHist) },
-        { label: 'TAXA DE CONVERSAO MEDIA', valor: taxaConversaoMediaExibicao },
-        { label: 'MEDIA DE COMISSAO (%)', valor: mediaPctHist }
+        { label: 'TAXA DE CONVERSAO MEDIA', valor: taxaConversaoMediaNum !== null ? taxaConversaoMediaNum : '-', tipo: taxaConversaoMediaNum !== null ? 'percentual' : 'texto' },
+        { label: 'MEDIA DE COMISSAO (%)', valor: mediaPctHistNum, tipo: 'percentual' }
       ],
       colunas: [
         { titulo: 'Mes Referencia', tipo: 'texto', largura: 18 },
         { titulo: 'Data', tipo: 'data', largura: 12 },
         { titulo: 'Cliente', tipo: 'texto', largura: 28 },
         { titulo: 'Valor da Venda (R$)', tipo: 'moeda', largura: 18 },
-        { titulo: 'Comissao (%)', tipo: 'texto', largura: 14 },
+        { titulo: 'Comissao (%)', tipo: 'percentual', largura: 14 },
         { titulo: 'Sua Comissao (R$)', tipo: 'moeda', largura: 18 },
         { titulo: 'Status', tipo: 'texto', largura: 12 }
       ],
@@ -1798,7 +1809,7 @@
         converterDataIsoParaExcel(v.dataVenda) || v.dataVenda || '-',
         v.cliente,
         v.valor,
-        String(v.porcentagem).replace('.', ','),
+        v.porcentagem,
         v.comissao,
         v.status
       ]),
