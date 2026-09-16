@@ -312,6 +312,16 @@
   </div>
 </div>
 
+<!-- Modal de Novidades da Versão (Changelog) -->
+<div class="modal-overlay-onboarding" id="modal-novidades" style="display: none; z-index: 100002;">
+  <div class="modal-card-onboarding" style="max-width: 480px;">
+    <h3 style="color: var(--accent-orange); margin-top:0;">🎉 Novidades desta Atualização</h3>
+    <h4 id="novidades-titulo" style="margin: 0; color: var(--text-main);"></h4>
+    <ul id="novidades-lista" style="margin: 0; padding-left: 20px; color: var(--text-muted); font-size: 0.9rem; line-height: 1.6;"></ul>
+    <button type="button" class="btn-auth" onclick="fecharModalNovidades()">Entendi</button>
+  </div>
+</div>
+
 <!-- Modal de Pesquisa Inicial de Onboarding (E-mail travado e persistente) -->
 <div class="modal-overlay-onboarding" id="modal-onboarding" style="display: none;">
   <div class="modal-card-onboarding">
@@ -738,6 +748,18 @@
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
 <script>
+  // ==================== NOVIDADES DA VERSÃO (CHANGELOG) ====================
+  // Para anunciar uma novidade nova: atualize APP_VERSION e adicione uma entrada no topo do CHANGELOG.
+  const APP_VERSION = "2026.09.15";
+  const CHANGELOG = [
+    { versao: "2026.09.15", titulo: "Contador de Clientes Atendidos e Relatórios Formatados", itens: [
+      "Novo contador de clientes atendidos direto na aba Radar",
+      "Relatórios em Excel agora com formatação profissional (moeda, data, percentual)",
+      "Correção nos backups de vendas e histórico excluídos"
+    ]}
+  ];
+  // ==================== FIM NOVIDADES DA VERSÃO ====================
+
   var _0x3a2b =["https://script.google.com/macros/s/AKfycbyKawXyJ7mSVy8FvEkhgG7CTGVv2Mo0g51obPw2mK26goglsDBnPfKuKOrBzG65yDmFKw/exec", "radar_user_email", "vendas_radar_", "historico_radar_", "radar_theme", "radar_user_nome", "radar_user_empresa", "radar_session_token", "atendimentos_radar_"];
   const API_NUVEM_URL = _0x3a2b[0];
   let vendas = [];
@@ -1075,10 +1097,39 @@
     if (!onboardingOk) {
       document.getElementById('ob-email-display').value = usuarioEmail;
       document.getElementById('modal-onboarding').style.display = 'flex';
+    } else {
+      // Novidades da versão: só verifica quando o onboarding não está sendo exibido agora, para não empilhar modais.
+      const ultimaVersaoVista = localStorage.getItem('ultima_versao_vista');
+      if (ultimaVersaoVista === null) {
+        localStorage.setItem('ultima_versao_vista', APP_VERSION);
+      } else if (ultimaVersaoVista !== APP_VERSION) {
+        exibirModalNovidades();
+      }
     }
 
     reiniciarTemporizadorInatividade();
     inicializarApp();
+  }
+
+  function exibirModalNovidades() {
+    const changelogAtual = CHANGELOG.find(c => c.versao === APP_VERSION) || CHANGELOG[CHANGELOG.length - 1];
+    if (!changelogAtual) return;
+
+    document.getElementById('novidades-titulo').innerText = changelogAtual.titulo;
+    const lista = document.getElementById('novidades-lista');
+    lista.innerHTML = '';
+    (changelogAtual.itens || []).forEach(item => {
+      const li = document.createElement('li');
+      li.innerText = item;
+      lista.appendChild(li);
+    });
+
+    document.getElementById('modal-novidades').style.display = 'flex';
+  }
+
+  function fecharModalNovidades() {
+    localStorage.setItem('ultima_versao_vista', APP_VERSION);
+    document.getElementById('modal-novidades').style.display = 'none';
   }
 
   function salvarOnboardingFrontend(e) {
