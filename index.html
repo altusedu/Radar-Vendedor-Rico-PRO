@@ -198,6 +198,13 @@
     .card .val.red { color: var(--accent-red); }
     .card .val.yellow { color: var(--accent-yellow); }
 
+    .stepper-atendimentos { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+    .stepper-btn { width: 48px; height: 48px; flex-shrink: 0; border-radius: 8px; border: none; cursor: pointer; font-size: 1.4rem; font-weight: 700; line-height: 1; display: flex; align-items: center; justify-content: center; background: var(--border-color); color: var(--text-main); }
+    .stepper-btn-add { background: var(--accent-orange); color: #fff; }
+    .stepper-input { flex: 1; min-width: 0; text-align: center; font-size: 1.5rem; font-weight: 700; color: var(--text-main); background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 8px; height: 48px; padding: 0 4px; }
+    .stepper-input::-webkit-outer-spin-button, .stepper-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .stepper-input { -moz-appearance: textfield; }
+
     .form-container { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 25px; }
     .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 15px; }
     .input-field { display: flex; flex-direction: column; gap: 6px; }
@@ -545,6 +552,14 @@
           <div class="card"><h4>Vendas Realizadas</h4><div class="val" id="total-vendas">0</div></div>
           <div class="card"><h4>Ticket Médio</h4><div class="val" id="ticket-medio">R$ 0,00</div></div>
           <div class="card"><h4>Taxa de Conversão Realizada</h4><div class="val yellow" id="radar-taxa-conversao">0,0%</div></div>
+          <div class="card" style="grid-column: span 2;">
+            <h4>Clientes Atendidos no Mês</h4>
+            <div class="stepper-atendimentos">
+              <button type="button" class="stepper-btn" title="Remover 1 atendimento" onclick="decrementarAtendimento()">−</button>
+              <input type="number" id="radar-atendimentos-contador" class="stepper-input" inputmode="numeric" min="0" step="1" value="0" onchange="definirAtendimentos(this.value)">
+              <button type="button" class="stepper-btn stepper-btn-add" title="Adicionar 1 atendimento" onclick="incrementarAtendimento()">+</button>
+            </div>
+          </div>
         </div>
 
         <div class="form-container">
@@ -587,7 +602,7 @@
           <div class="form-grid">
             <div class="input-field"><label for="meta-mensal">Meta de Comissão no Bolso (R$)</label><input type="text" id="meta-mensal" inputmode="decimal" value="R$ 10.000,00" oninput="mascaraMoedaInput(this); calcularMeta()"></div>
             <div class="input-field"><label for="dias-uteis">Dias Úteis Restantes</label><input type="number" id="dias-uteis" inputmode="numeric" value="20" oninput="calcularMeta()"></div>
-            <div class="input-field"><label for="atendimentos-totais">Total de Leads Atendidos no Mês</label><input type="number" id="atendimentos-totais" inputmode="numeric" value="100" oninput="calcularMeta()"></div>
+            <div class="input-field"><label for="atendimentos-totais">Total de Leads Atendidos no Mês</label><input type="number" id="atendimentos-totais" inputmode="numeric" disabled style="background-color: var(--border-color); color: var(--text-muted);" title="Espelha o contador 'Clientes Atendidos no Mês' da aba Radar"></div>
           </div>
         </div>
         <div class="grid-cards">
@@ -715,10 +730,11 @@
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
 <script>
-  var _0x3a2b =["https://script.google.com/macros/s/AKfycbyKawXyJ7mSVy8FvEkhgG7CTGVv2Mo0g51obPw2mK26goglsDBnPfKuKOrBzG65yDmFKw/exec", "radar_user_email", "vendas_radar_", "historico_radar_", "radar_theme", "radar_user_nome", "radar_user_empresa", "radar_session_token"];
+  var _0x3a2b =["https://script.google.com/macros/s/AKfycbyKawXyJ7mSVy8FvEkhgG7CTGVv2Mo0g51obPw2mK26goglsDBnPfKuKOrBzG65yDmFKw/exec", "radar_user_email", "vendas_radar_", "historico_radar_", "radar_theme", "radar_user_nome", "radar_user_empresa", "radar_session_token", "atendimentos_radar_"];
   const API_NUVEM_URL = _0x3a2b[0];
   let vendas = [];
   let historicoMeses = [];
+  let clientesAtendidosMes = 0;
   let selecionadosMass = new Set();
   let deferredPrompt = null;
   let usuarioEmail = "";
@@ -1115,11 +1131,48 @@
     
     vendas = JSON.parse(localStorage.getItem(_0x3a2b[2] + usuarioEmail)) || [];
     historicoMeses = JSON.parse(localStorage.getItem(_0x3a2b[3] + usuarioEmail)) || [];
+    clientesAtendidosMes = parseInt(localStorage.getItem(_0x3a2b[8] + usuarioEmail), 10) || 0;
     render();
+    renderAtendimentos();
 
     checarExibicaoPopupVmn();
     carregarVendasNuvemSilencioso();
     carregarHistoricoNuvemSilencioso();
+  }
+
+  function renderAtendimentos() {
+    const contador = document.getElementById('radar-atendimentos-contador');
+    if (contador) contador.value = clientesAtendidosMes;
+    const espelho = document.getElementById('atendimentos-totais');
+    if (espelho) espelho.value = clientesAtendidosMes;
+    calcularMeta();
+  }
+
+  function persistirAtendimentos() {
+    if (usuarioEmail) localStorage.setItem(_0x3a2b[8] + usuarioEmail, String(clientesAtendidosMes));
+  }
+
+  function incrementarAtendimento() {
+    clientesAtendidosMes++;
+    persistirAtendimentos();
+    renderAtendimentos();
+    sincronizarNuvem();
+  }
+
+  function decrementarAtendimento() {
+    if (clientesAtendidosMes > 0) clientesAtendidosMes--;
+    persistirAtendimentos();
+    renderAtendimentos();
+    sincronizarNuvem();
+  }
+
+  function definirAtendimentos(valor) {
+    let novoValor = parseInt(valor, 10);
+    if (isNaN(novoValor) || novoValor < 0) novoValor = 0;
+    clientesAtendidosMes = novoValor;
+    persistirAtendimentos();
+    renderAtendimentos();
+    sincronizarNuvem();
   }
 
   function executarRetornarVendas() {
@@ -1160,7 +1213,7 @@
     localStorage.setItem(_0x3a2b[2] + usuarioEmail, JSON.stringify(payloadVendas));
 
     if (API_NUVEM_URL) {
-      let bodyData = { vendas: payloadVendas, usuario_id: usuarioEmail, token: usuarioToken };
+      let bodyData = { vendas: payloadVendas, usuario_id: usuarioEmail, token: usuarioToken, atendimentosMes: clientesAtendidosMes };
       if (dadosFechamentoExtra) {
         bodyData.fechar_mes = dadosFechamentoExtra.fechar_mes;
         bodyData.vendasRestantes = dadosFechamentoExtra.vendasRestantes;
@@ -1185,6 +1238,11 @@
             localStorage.setItem(_0x3a2b[2] + usuarioEmail, JSON.stringify(vendas));
             render();
             if (callback) callback();
+          }
+          if (data && data.atendimentosMes !== undefined) {
+            clientesAtendidosMes = Number(data.atendimentosMes) || 0;
+            persistirAtendimentos();
+            renderAtendimentos();
           }
         }).catch(err => console.log('Erro ao buscar vendas nuvem'));
     }
@@ -1231,6 +1289,7 @@
     let qtdVendas = vendasPagas.length;
     let ticketMedio = qtdVendas ? (totalVendasVal / qtdVendas) : 0;
     let taxaConversao = document.getElementById('radar-taxa-conversao').innerText;
+    let totalAtendimentos = clientesAtendidosMes;
 
     const registroFechamento = {
       refMes: mesReferencia.trim(),
@@ -1238,18 +1297,23 @@
       totalVendas: qtdVendas,
       ticketMedio: ticketMedio,
       taxaConversao: taxaConversao,
+      totalAtendimentos: totalAtendimentos,
       vendasDetalhes: [...vendasPagas]
     };
 
     if (confirm('Confirma o fechamento do mês ' + mesReferencia + '?')) {
       vendas = [...vendasPendentes];
-      
+      clientesAtendidosMes = 0;
+      persistirAtendimentos();
+      renderAtendimentos();
+
       historicoMeses.unshift({
         refMes: mesReferencia.trim(),
         totalComissao: totalComissao,
         totalVendas: qtdVendas,
         ticketMedio: ticketMedio,
         taxaConversao: taxaConversao,
+        totalAtendimentos: totalAtendimentos,
         dataFechamento: new Date().toISOString(),
         vendasDetalhes: [...vendasPagas]
       });
@@ -1319,7 +1383,7 @@
       card.innerHTML = '<div class="historico-header" onclick="toggleAccordion(' + index + ')">' +
         '<div><h3 style="margin:0 0 4px 0; color:var(--accent-orange);">' + h.refMes + '</h3><small style="color:var(--text-muted);">Fechado em: ' + (h.dataFechamento ? formatarDataBR(h.dataFechamento) : '-') + '</small></div>' +
         '<div style="display:flex; align-items:center; gap:15px;">' +
-        '<div style="text-align:right;"><div style="font-size:1.2rem; font-weight:bold; color:var(--text-main);">' + formatarMoeda(h.totalComissao) + '</div><small style="color:var(--text-muted);">' + h.totalVendas + ' vendas | Conv: ' + h.taxaConversao + '</small></div>' +
+        '<div style="text-align:right;"><div style="font-size:1.2rem; font-weight:bold; color:var(--text-main);">' + formatarMoeda(h.totalComissao) + '</div><small style="color:var(--text-muted);">' + h.totalVendas + ' vendas | Conv: ' + h.taxaConversao + ' | Atendidos: ' + (h.totalAtendimentos || 0) + '</small></div>' +
         '<button class="icon-btn btn-delete" title="Excluir Fechamento" onclick="excluirMesHistorico(\'' + h.refMes + '\', event)">🗑️</button>' +
         '</div>' +
         '</div>' +
@@ -1640,6 +1704,7 @@
       kpis: [
         { label: 'TICKET MEDIO', valor: formatarMoeda(ticketMedio) },
         { label: 'TAXA DE CONVERSAO', valor: taxaConvNum !== null ? taxaConvNum : taxaConvTexto, tipo: taxaConvNum !== null ? 'percentual' : 'texto' },
+        { label: 'CLIENTES ATENDIDOS', valor: clientesAtendidosMes },
         { label: 'MEDIA DE COMISSAO (%)', valor: mediaPctComissaoNum, tipo: 'percentual' }
       ],
       colunas: [
@@ -1686,7 +1751,6 @@
       ],
       kpis: [
         { label: 'TICKET MEDIO', valor: formatarMoeda(ticketPend) },
-        { label: 'TAXA DE CONVERSAO', valor: '-' },
         { label: 'MEDIA DE COMISSAO (%)', valor: mediaPctPendNum, tipo: 'percentual' }
       ],
       colunas: [
@@ -1783,6 +1847,8 @@
       ? (taxasConversaoValidas.reduce((a, b) => a + b, 0) / taxasConversaoValidas.length)
       : null;
 
+    const totalAtendimentosHist = mesesSelecionados.reduce((acc, h) => acc + (Number(h.totalAtendimentos) || 0), 0);
+
     gerarExcelRelatorio({
       nomeRelatorio,
       infoLinhas: [
@@ -1793,6 +1859,7 @@
       kpis: [
         { label: 'TICKET MEDIO', valor: formatarMoeda(ticketMedioHist) },
         { label: 'TAXA DE CONVERSAO MEDIA', valor: taxaConversaoMediaNum !== null ? taxaConversaoMediaNum : '-', tipo: taxaConversaoMediaNum !== null ? 'percentual' : 'texto' },
+        { label: 'CLIENTES ATENDIDOS', valor: totalAtendimentosHist },
         { label: 'MEDIA DE COMISSAO (%)', valor: mediaPctHistNum, tipo: 'percentual' }
       ],
       colunas: [
@@ -1833,7 +1900,7 @@
   function calcularMeta() {
     const meta = parseMoedaFloat(document.getElementById('meta-mensal').value);
     const dias = parseFloat(document.getElementById('dias-uteis').value) || 1;
-    const atendimentosTotais = parseFloat(document.getElementById('atendimentos-totais').value) || 0;
+    const atendimentosTotais = clientesAtendidosMes || 0;
 
     const vendasPagas = vendas.filter(v => v.status === 'Pago');
     let totalComissaoRealizada = vendasPagas.reduce((acc, v) => acc + v.comissao, 0);

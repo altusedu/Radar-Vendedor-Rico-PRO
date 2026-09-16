@@ -1,8 +1,8 @@
 {
   "name": "Radar do Vendedor Rico PRO",
   "short_name": "Radar PRO",
-  "start_url": "/radar-vendedor-rico-pro/",
-  "scope": "/radar-vendedor-rico-pro/",
+  "start_url": "/Radar-Vendedor-Rico-PRO/",
+  "scope": "/Radar-Vendedor-Rico-PRO/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#0f172a",

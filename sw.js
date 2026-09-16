@@ -1,11 +1,11 @@
-const CACHE_NAME = 'radar-vendedor-rico-v2';
+const CACHE_NAME = 'radar-vendedor-rico-v3';
 const urlsToCache = [
-  '/radar-vendedor-rico-pro/',
-  '/radar-vendedor-rico-pro/index.html',
-  '/radar-vendedor-rico-pro/manifest.json',
-  '/radar-vendedor-rico-pro/logo-customizada.png',
-  '/radar-vendedor-rico-pro/icon-192.png',
-  '/radar-vendedor-rico-pro/icon-512.png',
+  '/Radar-Vendedor-Rico-PRO/',
+  '/Radar-Vendedor-Rico-PRO/index.html',
+  '/Radar-Vendedor-Rico-PRO/manifest.json',
+  '/Radar-Vendedor-Rico-PRO/logo-customizada.png',
+  '/Radar-Vendedor-Rico-PRO/icon-192.png',
+  '/Radar-Vendedor-Rico-PRO/icon-512.png',
   'https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js'
 ];
 
