@@ -397,9 +397,12 @@
           <select id="ob-comissao" required style="height: 42px;">
             <option value="">Selecione...</option>
             <option value="Menos que 1%">Menos que 1%</option>
-            <option value="Entre 1% e 5%">Entre 1% e 5%</option>
+            <option value="Entre 1% e 3%">Entre 1% e 3%</option>
+            <option value="Entre 3% e 5%">Entre 3% e 5%</option>
             <option value="Entre 5% e 10%">Entre 5% e 10%</option>
-            <option value="Maior que 10%">Maior que 10%</option>
+            <option value="Entre 10% e 15%">Entre 10% e 15%</option>
+            <option value="Entre 15% e 30%">Entre 15% e 30%</option>
+            <option value="Maior que 30%">Maior que 30%</option>
           </select>
         </div>
       </div>
@@ -895,7 +898,7 @@
         usuarioToken = data.token || "";
         localStorage.setItem(_0x3a2b[1], usuarioEmail);
         localStorage.setItem(_0x3a2b[7], usuarioToken);
-        concluirLoginSucesso();
+        concluirLoginSucesso(data.onboardingConcluido);
       } else {
         if (data.erro === "Senha incorreta.") {
           tentativasSenha++;
@@ -1003,7 +1006,7 @@
     .then(res => res.json())
     .then(data => {
       if (data.status === "sucesso") {
-        concluirLoginSucesso();
+        concluirLoginSucesso(false); // conta recém-criada: onboarding nunca foi concluído
       } else {
         exibirMensagemAuth(data.mensagem || "Usuário não localizado na base da Eduzz.", "msg-error", true);
       }
@@ -1044,7 +1047,7 @@
         if (data && data.autorizado === true) {
           usuarioEmail = email;
           usuarioToken = token;
-          concluirLoginSucesso();
+          concluirLoginSucesso(data.onboardingConcluido);
         } else {
           bloquearAcesso();
         }
@@ -1054,16 +1057,17 @@
       });
   }
 
-  function concluirLoginSucesso() {
+  function concluirLoginSucesso(onboardingConcluidoBackend) {
     document.getElementById('auth-screen').style.display = 'none';
     document.getElementById('app-main-content').style.display = 'flex';
     const topbar = document.getElementById('mobile-topbar-header');
     if (topbar) topbar.style.display = 'flex';
     document.getElementById('display-user-email').innerText = usuarioEmail;
-    
-    // Verifica persistência vinculada estritamente ao e-mail do usuário logado
-    const onboardingOk = localStorage.getItem('altus_radar_full_ob_' + usuarioEmail);
-    if (onboardingOk !== 'true') {
+
+    // Fonte de verdade é o backend (onboardingConcluidoBackend); localStorage só espelha como cache.
+    const onboardingOk = onboardingConcluidoBackend === true;
+    localStorage.setItem('altus_radar_full_ob_' + usuarioEmail, onboardingOk ? 'true' : 'false');
+    if (!onboardingOk) {
       document.getElementById('ob-email-display').value = usuarioEmail;
       document.getElementById('modal-onboarding').style.display = 'flex';
     }
