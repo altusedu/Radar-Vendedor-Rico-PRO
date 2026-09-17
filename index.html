@@ -961,17 +961,23 @@
     if (topbar) topbar.style.display = 'none';
   }
 
-  // Cota do Apps Script às vezes devolve uma página HTML de erro com status 200 em vez do JSON esperado.
-  // Detecta isso pela falha do res.json() e tenta de novo com backoff exponencial (1s, 2s, 4s) antes de desistir.
-  async function fetchComRetry(url, opcoes, tentativasMax = 3) {
+  // Cota do Apps Script às vezes devolve uma página HTML de erro com status 200 em vez do JSON
+  // esperado — e, sob disputa de cota entre produtos da mesma conta, uma requisição pode ficar
+  // pendurada por minutos em vez de falhar rápido. O AbortController corta cada tentativa em
+  // timeoutMs; o timeout cai no mesmo catch do parse malsucedido e aciona o backoff normalmente.
+  async function fetchComRetry(url, opcoes, tentativasMax = 3, timeoutMs = 10000) {
     for (let tentativa = 1; tentativa <= tentativasMax; tentativa++) {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
       try {
-        const res = await fetch(url, opcoes);
+        const res = await fetch(url, { ...opcoes, signal: controller.signal });
         return await res.json();
       } catch (err) {
         if (tentativa >= tentativasMax) throw err;
         const esperaMs = Math.pow(2, tentativa - 1) * 1000;
         await new Promise(resolve => setTimeout(resolve, esperaMs));
+      } finally {
+        clearTimeout(timeoutId);
       }
     }
   }
