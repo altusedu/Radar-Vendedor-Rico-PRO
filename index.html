@@ -153,6 +153,20 @@
       box-shadow: 0 4px 10px rgba(249, 115, 22, 0.3); margin-top: 8px; text-align: center; width: 100%;
     }
 
+    #loading-overlay {
+      position: fixed; inset: 0; z-index: 20000; background: rgba(15, 23, 42, 0.72);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px;
+    }
+    .loading-radar { position: relative; width: 76px; height: 76px; border-radius: 50%; overflow: hidden; }
+    .loading-radar img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .loading-radar-sweep {
+      position: absolute; inset: 0; border-radius: 50%;
+      background: conic-gradient(from 0deg, transparent 0 70%, rgba(249, 115, 22, 0.25) 77%, rgba(249, 115, 22, 0.95) 96%, transparent 100%);
+      mix-blend-mode: screen; transform-origin: center; animation: loading-radar-scan 1.3s linear infinite;
+    }
+    #loading-overlay p { color: #fff; font-size: 0.9rem; font-weight: 700; margin: 0; }
+    @keyframes loading-radar-scan { to { transform: rotate(1turn); } }
+
     .footer-actions { display: flex; gap: 8px; margin-top: 8px; }
     .row-btn { flex: 1; background: rgba(249, 115, 22, 0.1); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 10px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.78rem; display: flex; align-items: center; justify-content: center; gap: 4px; }
     .btn-install-footer { flex: 1; background: rgba(234, 179, 8, 0.15); border: 1px solid rgba(234, 179, 8, 0.5); color: var(--accent-yellow); padding: 8px 10px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.78rem; display: flex; align-items: center; justify-content: center; gap: 4px; }
@@ -460,6 +474,15 @@
     </div>
     <button type="button" class="btn-auth" onclick="consentirDiretoNoPopup()" style="margin-top: 15px;">Concordar e Fechar</button>
   </div>
+</div>
+
+<!-- Overlay de carregamento (ações de restauração na aba Dados & Segurança) -->
+<div id="loading-overlay" style="display: none;">
+  <div class="loading-radar">
+    <img src="icon-512.png" alt="" aria-hidden="true">
+    <span class="loading-radar-sweep"></span>
+  </div>
+  <p id="loading-overlay-texto">Processando...</p>
 </div>
 
 <!-- Tela de Autenticação / Senha (Primeira Tela) -->
@@ -827,6 +850,15 @@
     if (topbar) topbar.style.display = 'none';
     const menu = document.getElementById('user-dropdown-menu');
     if (menu) menu.classList.remove('show');
+  }
+
+  function mostrarLoading(texto) {
+    document.getElementById('loading-overlay-texto').innerText = texto || 'Processando...';
+    document.getElementById('loading-overlay').style.display = 'flex';
+  }
+
+  function esconderLoading() {
+    document.getElementById('loading-overlay').style.display = 'none';
   }
 
   function minimizarCTA() {
@@ -1274,32 +1306,42 @@
   function executarRetornarVendas() {
     if (!usuarioEmail) return;
     if (confirm("Deseja retornar para o radar as vendas do mês corrente que estavam com exclusão ativa?")) {
+      mostrarLoading("Retornando vendas...");
       fetch(API_NUVEM_URL + '?action=retornar_vendas_excluidas&usuario_id=' + encodeURIComponent(usuarioEmail) + '&token=' + encodeURIComponent(usuarioToken), { redirect: 'follow' })
         .then(res => res.json())
         .then(data => {
+          esconderLoading();
           if (data && data.vendas) {
             vendas = data.vendas;
             localStorage.setItem(_0x3a2b[2] + usuarioEmail, JSON.stringify(vendas));
             render();
             alert("Vendas retornadas com sucesso!");
           }
-        }).catch(err => alert("Erro ao conectar com a nuvem."));
+        }).catch(err => {
+          esconderLoading();
+          alert("Erro ao conectar com a nuvem.");
+        });
     }
   }
 
   function executarRestaurarHistorico() {
     if (!usuarioEmail) return;
     if (confirm("Deseja restaurar para o aplicativo os relatórios de meses anteriores excluídos?")) {
+      mostrarLoading("Restaurando histórico...");
       fetch(API_NUVEM_URL + '?action=restaurar_historico_excluido&usuario_id=' + encodeURIComponent(usuarioEmail) + '&token=' + encodeURIComponent(usuarioToken), { redirect: 'follow' })
         .then(res => res.json())
         .then(data => {
+          esconderLoading();
           if (data && data.historico) {
             historicoMeses = data.historico;
             localStorage.setItem(_0x3a2b[3] + usuarioEmail, JSON.stringify(historicoMeses));
             renderHistorico();
             alert("Histórico de meses fechados restaurado com sucesso!");
           }
-        }).catch(err => alert("Erro ao conectar com a nuvem."));
+        }).catch(err => {
+          esconderLoading();
+          alert("Erro ao conectar com a nuvem.");
+        });
     }
   }
 
