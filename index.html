@@ -961,6 +961,21 @@
     if (topbar) topbar.style.display = 'none';
   }
 
+  // Cota do Apps Script às vezes devolve uma página HTML de erro com status 200 em vez do JSON esperado.
+  // Detecta isso pela falha do res.json() e tenta de novo com backoff exponencial (1s, 2s, 4s) antes de desistir.
+  async function fetchComRetry(url, opcoes, tentativasMax = 3) {
+    for (let tentativa = 1; tentativa <= tentativasMax; tentativa++) {
+      try {
+        const res = await fetch(url, opcoes);
+        return await res.json();
+      } catch (err) {
+        if (tentativa >= tentativasMax) throw err;
+        const esperaMs = Math.pow(2, tentativa - 1) * 1000;
+        await new Promise(resolve => setTimeout(resolve, esperaMs));
+      }
+    }
+  }
+
   function validarEEntrar() {
     const email = document.getElementById('input-login-email').value.trim().toLowerCase();
     const senha = document.getElementById('input-login-senha').value;
@@ -973,13 +988,12 @@
     document.getElementById('btn-login').innerText = "Validando...";
     document.getElementById('btn-login').disabled = true;
 
-    fetch(API_NUVEM_URL, {
+    fetchComRetry(API_NUVEM_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action: "validar_aluno", email: email, senha: senha, origemHost: ORIGEM_HOST }),
       redirect: 'follow'
     })
-    .then(res => res.json())
     .then(data => {
       document.getElementById('btn-login').innerText = "Entrar no Aplicativo";
       document.getElementById('btn-login').disabled = false;
@@ -1089,13 +1103,12 @@
 
     usuarioEmail = email;
 
-    fetch(API_NUVEM_URL, {
+    fetchComRetry(API_NUVEM_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action: "cadastrar_senha", email: email, senha: senha, origemHost: ORIGEM_HOST }),
       redirect: 'follow'
     })
-    .then(res => res.json())
     .then(data => {
       if (data.status === "sucesso") {
         concluirLoginSucesso(false); // conta recém-criada: onboarding nunca foi concluído
@@ -1133,8 +1146,7 @@
   }
 
   function validarSessaoNuvem(email, token) {
-    fetch(API_NUVEM_URL + "?action=validar_sessao&email=" + encodeURIComponent(email) + "&token=" + encodeURIComponent(token) + "&origemHost=" + encodeURIComponent(ORIGEM_HOST), { redirect: 'follow' })
-      .then(res => res.json())
+    fetchComRetry(API_NUVEM_URL + "?action=validar_sessao&email=" + encodeURIComponent(email) + "&token=" + encodeURIComponent(token) + "&origemHost=" + encodeURIComponent(ORIGEM_HOST), { redirect: 'follow' })
       .then(data => {
         if (data && data.autorizado === true) {
           usuarioEmail = email;
