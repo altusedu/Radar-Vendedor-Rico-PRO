@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+<!-- © Grupo Altus Educacional — Radar do Vendedor Rico PRO — 2026-09-17 — Desenvolvido por Rafael Pires. Cópia não autorizada. -->
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -11,6 +12,7 @@
   <meta name="theme-color" content="#0f172a">
 
   <style>
+    /* © Grupo Altus Educacional — Radar do Vendedor Rico PRO — 2026-09-17 — Desenvolvido por Rafael Pires. Cópia não autorizada. */
     :root {
       --bg-dark: #0f172a;
       --card-bg: #1e293b;
@@ -787,6 +789,9 @@
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
 <script>
+  // © Grupo Altus Educacional — Radar do Vendedor Rico PRO — 2026-09-17 — Desenvolvido por Rafael Pires. Cópia não autorizada.
+  console.log("%c© Grupo Altus Educacional — Radar do Vendedor Rico PRO\nDesenvolvido por Rafael Pires — 2026-09-17\nCópia, redistribuição ou engenharia reversa não autorizadas.", "color:#f97316; font-weight:bold;");
+
   // ==================== NOVIDADES DA VERSÃO (CHANGELOG) ====================
   // Para anunciar uma novidade nova: atualize APP_VERSION e adicione uma entrada no topo do CHANGELOG.
   const APP_VERSION = "2026.09.15";
@@ -801,6 +806,7 @@
 
   var _0x3a2b =["https://script.google.com/macros/s/AKfycbyKawXyJ7mSVy8FvEkhgG7CTGVv2Mo0g51obPw2mK26goglsDBnPfKuKOrBzG65yDmFKw/exec", "radar_user_email", "vendas_radar_", "historico_radar_", "radar_theme", "radar_user_nome", "radar_user_empresa", "radar_session_token", "atendimentos_radar_"];
   const API_NUVEM_URL = _0x3a2b[0];
+  const ORIGEM_HOST = window.location.hostname;
   const CHECKOUT_URL = "https://sun.eduzz.com/8WPND45N0P";
   let vendas = [];
   let historicoMeses = [];
@@ -970,7 +976,7 @@
     fetch(API_NUVEM_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: "validar_aluno", email: email, senha: senha }),
+      body: JSON.stringify({ action: "validar_aluno", email: email, senha: senha, origemHost: ORIGEM_HOST }),
       redirect: 'follow'
     })
     .then(res => res.json())
@@ -1086,7 +1092,7 @@
     fetch(API_NUVEM_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: "cadastrar_senha", email: email, senha: senha }),
+      body: JSON.stringify({ action: "cadastrar_senha", email: email, senha: senha, origemHost: ORIGEM_HOST }),
       redirect: 'follow'
     })
     .then(res => res.json())
@@ -1112,7 +1118,7 @@
     fetch(API_NUVEM_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: "esqueci_senha", email: email }),
+      body: JSON.stringify({ action: "esqueci_senha", email: email, origemHost: ORIGEM_HOST }),
       redirect: 'follow'
     })
     .then(res => res.json())
@@ -1127,7 +1133,7 @@
   }
 
   function validarSessaoNuvem(email, token) {
-    fetch(API_NUVEM_URL + "?action=validar_sessao&email=" + encodeURIComponent(email) + "&token=" + encodeURIComponent(token), { redirect: 'follow' })
+    fetch(API_NUVEM_URL + "?action=validar_sessao&email=" + encodeURIComponent(email) + "&token=" + encodeURIComponent(token) + "&origemHost=" + encodeURIComponent(ORIGEM_HOST), { redirect: 'follow' })
       .then(res => res.json())
       .then(data => {
         if (data && data.autorizado === true) {
@@ -1212,6 +1218,7 @@
       action: "salvar_onboarding",
       email: usuarioEmail,
       token: usuarioToken,
+      origemHost: ORIGEM_HOST,
       nome: usuarioNome,
       telefone: document.getElementById('ob-telefone').value,
       cidade: document.getElementById('ob-cidade').value,
@@ -1307,7 +1314,7 @@
     if (!usuarioEmail) return;
     if (confirm("Deseja retornar para o radar as vendas do mês corrente que estavam com exclusão ativa?")) {
       mostrarLoading("Retornando vendas...");
-      fetch(API_NUVEM_URL + '?action=retornar_vendas_excluidas&usuario_id=' + encodeURIComponent(usuarioEmail) + '&token=' + encodeURIComponent(usuarioToken), { redirect: 'follow' })
+      fetch(API_NUVEM_URL + '?action=retornar_vendas_excluidas&usuario_id=' + encodeURIComponent(usuarioEmail) + '&token=' + encodeURIComponent(usuarioToken) + '&origemHost=' + encodeURIComponent(ORIGEM_HOST), { redirect: 'follow' })
         .then(res => res.json())
         .then(data => {
           esconderLoading();
@@ -1328,7 +1335,7 @@
     if (!usuarioEmail) return;
     if (confirm("Deseja restaurar para o aplicativo os relatórios de meses anteriores excluídos?")) {
       mostrarLoading("Restaurando histórico...");
-      fetch(API_NUVEM_URL + '?action=restaurar_historico_excluido&usuario_id=' + encodeURIComponent(usuarioEmail) + '&token=' + encodeURIComponent(usuarioToken), { redirect: 'follow' })
+      fetch(API_NUVEM_URL + '?action=restaurar_historico_excluido&usuario_id=' + encodeURIComponent(usuarioEmail) + '&token=' + encodeURIComponent(usuarioToken) + '&origemHost=' + encodeURIComponent(ORIGEM_HOST), { redirect: 'follow' })
         .then(res => res.json())
         .then(data => {
           esconderLoading();
@@ -1351,7 +1358,7 @@
     localStorage.setItem(_0x3a2b[2] + usuarioEmail, JSON.stringify(payloadVendas));
 
     if (API_NUVEM_URL) {
-      let bodyData = { vendas: payloadVendas, usuario_id: usuarioEmail, token: usuarioToken, atendimentosMes: clientesAtendidosMes };
+      let bodyData = { vendas: payloadVendas, usuario_id: usuarioEmail, token: usuarioToken, atendimentosMes: clientesAtendidosMes, origemHost: ORIGEM_HOST };
       if (dadosFechamentoExtra) {
         bodyData.fechar_mes = dadosFechamentoExtra.fechar_mes;
         bodyData.vendasRestantes = dadosFechamentoExtra.vendasRestantes;
@@ -1368,7 +1375,7 @@
 
   function carregarVendasNuvemSilencioso(callback) {
     if (API_NUVEM_URL && usuarioEmail) {
-      fetch(API_NUVEM_URL + '?usuario_id=' + encodeURIComponent(usuarioEmail) + '&token=' + encodeURIComponent(usuarioToken), { redirect: 'follow' })
+      fetch(API_NUVEM_URL + '?usuario_id=' + encodeURIComponent(usuarioEmail) + '&token=' + encodeURIComponent(usuarioToken) + '&origemHost=' + encodeURIComponent(ORIGEM_HOST), { redirect: 'follow' })
         .then(res => res.json())
         .then(data => {
           if (data && data.vendas) {
@@ -1388,7 +1395,7 @@
 
   function carregarHistoricoNuvemSilencioso(callback) {
     if (API_NUVEM_URL && usuarioEmail) {
-      fetch(API_NUVEM_URL + '?action=buscar_historico&usuario_id=' + encodeURIComponent(usuarioEmail) + '&token=' + encodeURIComponent(usuarioToken), { redirect: 'follow' })
+      fetch(API_NUVEM_URL + '?action=buscar_historico&usuario_id=' + encodeURIComponent(usuarioEmail) + '&token=' + encodeURIComponent(usuarioToken) + '&origemHost=' + encodeURIComponent(ORIGEM_HOST), { redirect: 'follow' })
         .then(res => res.json())
         .then(data => {
           if (data && data.historico) {
@@ -1480,7 +1487,7 @@
         fetch(API_NUVEM_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ excluir_mes_ref: refMes, usuario_id: usuarioEmail, token: usuarioToken }),
+          body: JSON.stringify({ excluir_mes_ref: refMes, usuario_id: usuarioEmail, token: usuarioToken, origemHost: ORIGEM_HOST }),
           redirect: 'follow'
         }).catch(err => console.log('Erro ao excluir mês da nuvem:', err));
       }
