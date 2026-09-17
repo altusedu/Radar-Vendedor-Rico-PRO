@@ -486,6 +486,7 @@
     </div>
 
     <div id="auth-msg" style="margin-top: 15px; font-size: 0.85rem; display: none;"></div>
+    <a href="#" id="btn-ir-checkout" target="_blank" class="btn-auth" style="display: none; margin-top: 12px; text-decoration: none; text-align: center; box-sizing: border-box;">💲 Fazer minha assinatura agora</a>
   </div>
 </div>
 
@@ -762,6 +763,7 @@
 
   var _0x3a2b =["https://script.google.com/macros/s/AKfycbyKawXyJ7mSVy8FvEkhgG7CTGVv2Mo0g51obPw2mK26goglsDBnPfKuKOrBzG65yDmFKw/exec", "radar_user_email", "vendas_radar_", "historico_radar_", "radar_theme", "radar_user_nome", "radar_user_empresa", "radar_session_token", "atendimentos_radar_"];
   const API_NUVEM_URL = _0x3a2b[0];
+  const CHECKOUT_URL = "https://sun.eduzz.com/8WPND45N0P";
   let vendas = [];
   let historicoMeses = [];
   let clientesAtendidosMes = 0;
@@ -1176,13 +1178,22 @@
 
   function exibirMensagemAuth(msg, classe, mostrarCheckout) {
     const el = document.getElementById('auth-msg');
-    el.innerText = msg; 
-    el.className = classe; 
+    el.innerText = msg;
+    el.className = classe;
     el.style.display = 'block';
+
+    const btnCheckout = document.getElementById('btn-ir-checkout');
+    if (mostrarCheckout) {
+      btnCheckout.href = CHECKOUT_URL;
+      btnCheckout.style.display = 'block';
+    } else {
+      btnCheckout.style.display = 'none';
+    }
   }
 
   function esconderErroAuth() {
     document.getElementById('auth-msg').style.display = 'none';
+    document.getElementById('btn-ir-checkout').style.display = 'none';
   }
 
   function inicializarApp() {
