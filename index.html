@@ -80,11 +80,10 @@
     }
     .sidebar-top { display: flex; flex-direction: column; width: 100%; }
     
-    .brand-container { width: 100%; margin: 0; padding: 8px 0; background: #1f2427; }
+    .brand-container { width: 100%; margin: 0; padding: 16px 20px 0; box-sizing: border-box; }
     .brand-logo-btn { background: none; border: none; padding: 0; cursor: pointer; display: block; width: 100%; }
-    .brand-logo { width: 100%; aspect-ratio: 1600 / 893; object-fit: contain; display: block; border-radius: 0; }
+    .brand-logo { width: 100%; height: auto; object-fit: contain; display: block; border-radius: 0; }
     .brand-logo-light { display: none; }
-    body.light-theme .brand-container { background: #ffffff; }
     body.light-theme .brand-logo-dark { display: none; }
     body.light-theme .brand-logo-light { display: block; }
 
@@ -135,11 +134,23 @@
       background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(59, 130, 246, 0.15));
       border: 1px solid var(--accent-orange); border-radius: 10px; padding: 14px; text-align: center; margin-top: 8px;
     }
-    .sidebar-cta-card h5 { color: var(--accent-orange); font-size: 0.82rem; font-weight: 800; text-transform: uppercase; margin: 0 0 4px 0; }
+    .sidebar-cta-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .sidebar-cta-card h5 { color: var(--accent-orange); font-size: 0.82rem; font-weight: 800; text-transform: uppercase; margin: 0; text-align: left; }
     .sidebar-cta-card p { color: var(--text-main); font-size: 0.75rem; line-height: 1.3; margin: 0 0 10px 0; font-weight: 500; }
     .sidebar-cta-btn {
       display: block; background: var(--accent-orange); color: #fff; text-decoration: none; font-weight: 800; font-size: 0.78rem;
       padding: 10px; border-radius: 6px; box-shadow: 0 4px 10px rgba(249, 115, 22, 0.3); text-align: center;
+    }
+    .btn-minimize-cta {
+      background: rgba(255, 255, 255, 0.1); border: none; color: var(--text-muted); width: 20px; height: 20px;
+      border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 0.7rem; display: flex; align-items: center;
+      justify-content: center; flex-shrink: 0; transition: background 0.2s;
+    }
+    .btn-minimize-cta:hover { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
+    .btn-minimized-cta {
+      display: none; background: var(--accent-orange); color: #fff; border: none; padding: 8px 12px;
+      border-radius: 20px; font-weight: 800; font-size: 0.75rem; cursor: pointer;
+      box-shadow: 0 4px 10px rgba(249, 115, 22, 0.3); margin-top: 8px; text-align: center; width: 100%;
     }
 
     .footer-actions { display: flex; gap: 8px; margin-top: 8px; }
@@ -541,11 +552,15 @@
           <button class="btn-install-footer" onclick="instalarAppPWA()" id="btn-install-pwa">📲 Instalar</button>
         </div>
 
-        <div class="sidebar-cta-card">
-          <h5>🔥 Vendas Movem Negócios</h5>
+        <div class="sidebar-cta-card" id="box-sidebar-cta">
+          <div class="sidebar-cta-header">
+            <h5>🔥 Vendas Movem Negócios</h5>
+            <button class="btn-minimize-cta" onclick="minimizarCTA()" title="Minimizar">✕</button>
+          </div>
           <p>Domine técnicas de alta performance, aumente seu ticket médio e multiplique sua conversão!</p>
           <a href="https://sun.eduzz.com/7WXGQ4Y20A" target="_blank" class="sidebar-cta-btn">QUERO DOMINAR MINHAS VENDAS</a>
         </div>
+        <button class="btn-minimized-cta" id="btn-minimized-cta" onclick="expandirCTA()">🔥 Vendas Movem Negócios</button>
       </div>
     </div>
   </div>
@@ -812,6 +827,16 @@
     if (topbar) topbar.style.display = 'none';
     const menu = document.getElementById('user-dropdown-menu');
     if (menu) menu.classList.remove('show');
+  }
+
+  function minimizarCTA() {
+    document.getElementById('box-sidebar-cta').style.display = 'none';
+    document.getElementById('btn-minimized-cta').style.display = 'block';
+  }
+
+  function expandirCTA() {
+    document.getElementById('box-sidebar-cta').style.display = 'block';
+    document.getElementById('btn-minimized-cta').style.display = 'none';
   }
 
   function toggleSidebarMobile() {
