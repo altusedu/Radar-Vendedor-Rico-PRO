@@ -505,9 +505,23 @@
       </div>
     </div>
 
+    <div class="auth-input-group" id="group-cadastro-email" style="display: none;">
+      <p style="font-size: 0.82rem; color: var(--accent-yellow); margin-bottom: 5px;">Informe seu e-mail de compra na Eduzz para começarmos:</p>
+      <input type="email" id="input-cadastro-email-inicial" placeholder="Seu e-mail da Eduzz">
+      <button class="btn-auth" id="btn-continuar-cadastro-email" onclick="solicitarVerificacaoCadastro()">Continuar</button>
+      <a href="#" onclick="voltarLogin(event)" style="color: var(--text-muted); font-size: 0.78rem; text-decoration: underline; margin-top: 5px; display:inline-block;">Já tenho cadastro</a>
+    </div>
+
+    <div class="auth-input-group" id="group-cadastro-codigo" style="display: none;">
+      <p style="font-size: 0.82rem; color: var(--accent-yellow); margin-bottom: 5px;">Enviamos um código para o seu e-mail. Digite-o abaixo:</p>
+      <input type="text" id="input-cadastro-codigo" placeholder="Código de 6 dígitos" maxlength="6" inputmode="numeric">
+      <button class="btn-auth" id="btn-confirmar-codigo-cadastro" onclick="verificarCodigoCadastro()">Confirmar código</button>
+      <a href="#" onclick="voltarLogin(event)" style="color: var(--text-muted); font-size: 0.78rem; text-decoration: underline; margin-top: 5px; display:inline-block;">Cancelar</a>
+    </div>
+
     <div class="auth-input-group" id="group-criacao-senha" style="display: none;">
-      <p style="font-size: 0.82rem; color: var(--accent-yellow); margin-bottom: 5px;">Informe seu e-mail de compra na Eduzz e crie sua senha:</p>
-      <input type="email" id="input-cad-email" placeholder="Seu e-mail da Eduzz">
+      <p style="font-size: 0.82rem; color: var(--accent-yellow); margin-bottom: 5px;">E-mail confirmado! Agora crie sua senha:</p>
+      <input type="email" id="input-cad-email" style="display: none;">
       <input type="password" id="input-nova-senha" placeholder="Crie sua senha (mín. 6 dígitos)">
       <input type="password" id="input-confirma-senha" placeholder="Confirme a nova senha">
       <button class="btn-auth" onclick="salvarPrimeiraSenha()">Cadastrar e Entrar</button>
@@ -820,6 +834,8 @@
   let newWorker = null;
   let tentativasSenha = 0;
   let timerInatividade = null;
+  let emailCadastroAtual = "";
+  let confirmacaoEmailCadastro = "";
 
   // Gerenciamento de Inatividade (10 minutos)
   function reiniciarTemporizadorInatividade() {
@@ -1038,14 +1054,18 @@
     e.preventDefault();
     document.getElementById('group-login').style.display = 'none';
     document.getElementById('group-recuperacao').style.display = 'none';
-    document.getElementById('group-criacao-senha').style.display = 'flex';
-    document.getElementById('auth-subtitle').innerText = "Informe seu e-mail de compra na Eduzz e crie sua senha:";
+    document.getElementById('group-cadastro-codigo').style.display = 'none';
+    document.getElementById('group-criacao-senha').style.display = 'none';
+    document.getElementById('group-cadastro-email').style.display = 'flex';
+    document.getElementById('auth-subtitle').innerText = "Confirme seu e-mail para criar sua conta:";
     esconderErroAuth();
   }
 
   function abrirEsqueciSenha(e) {
     e.preventDefault();
     document.getElementById('group-login').style.display = 'none';
+    document.getElementById('group-cadastro-email').style.display = 'none';
+    document.getElementById('group-cadastro-codigo').style.display = 'none';
     document.getElementById('group-criacao-senha').style.display = 'none';
     document.getElementById('group-recuperacao').style.display = 'flex';
     document.getElementById('auth-subtitle').innerText = "Recuperação de Acesso";
@@ -1054,10 +1074,14 @@
 
   function voltarLogin(e) {
     e.preventDefault();
+    document.getElementById('group-cadastro-email').style.display = 'none';
+    document.getElementById('group-cadastro-codigo').style.display = 'none';
     document.getElementById('group-criacao-senha').style.display = 'none';
     document.getElementById('group-recuperacao').style.display = 'none';
     document.getElementById('group-login').style.display = 'flex';
     document.getElementById('auth-subtitle').innerText = "Digite seu e-mail e senha de acesso para entrar.";
+    emailCadastroAtual = "";
+    confirmacaoEmailCadastro = "";
     esconderErroAuth();
   }
 
@@ -1089,6 +1113,86 @@
     document.getElementById('modal-termo').style.display = 'none';
   }
 
+  function solicitarVerificacaoCadastro() {
+    const email = document.getElementById('input-cadastro-email-inicial').value.trim().toLowerCase();
+
+    if (!email || !email.includes('@')) {
+      exibirMensagemAuth("Digite um e-mail válido da Eduzz.", "msg-error", false);
+      return;
+    }
+
+    emailCadastroAtual = email;
+
+    const btn = document.getElementById('btn-continuar-cadastro-email');
+    btn.innerText = "Enviando...";
+    btn.disabled = true;
+
+    fetchComRetry(API_NUVEM_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: "solicitar_verificacao_cadastro", email: email, origemHost: ORIGEM_HOST }),
+      redirect: 'follow'
+    })
+    .then(data => {
+      btn.innerText = "Continuar";
+      btn.disabled = false;
+
+      if (data.status === "sucesso") {
+        document.getElementById('group-cadastro-email').style.display = 'none';
+        document.getElementById('group-cadastro-codigo').style.display = 'flex';
+        document.getElementById('auth-subtitle').innerText = "Enviamos um código para o seu e-mail.";
+        esconderErroAuth();
+      } else {
+        exibirMensagemAuth(data.mensagem || "Não foi possível enviar o código de verificação.", "msg-error", true);
+      }
+    })
+    .catch(() => {
+      btn.innerText = "Continuar";
+      btn.disabled = false;
+      exibirMensagemAuth("Erro ao conectar com o servidor.", "msg-error", false);
+    });
+  }
+
+  function verificarCodigoCadastro() {
+    const codigo = document.getElementById('input-cadastro-codigo').value.trim();
+
+    if (!codigo || codigo.length !== 6) {
+      exibirMensagemAuth("Digite o código de 6 dígitos recebido por e-mail.", "msg-error", false);
+      return;
+    }
+
+    const btn = document.getElementById('btn-confirmar-codigo-cadastro');
+    btn.innerText = "Verificando...";
+    btn.disabled = true;
+
+    fetchComRetry(API_NUVEM_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: "verificar_codigo_cadastro", email: emailCadastroAtual, codigo: codigo, origemHost: ORIGEM_HOST }),
+      redirect: 'follow'
+    })
+    .then(data => {
+      btn.innerText = "Confirmar código";
+      btn.disabled = false;
+
+      if (data.status === "sucesso" && data.confirmacaoEmail) {
+        confirmacaoEmailCadastro = data.confirmacaoEmail;
+        document.getElementById('input-cad-email').value = emailCadastroAtual;
+        document.getElementById('group-cadastro-codigo').style.display = 'none';
+        document.getElementById('group-criacao-senha').style.display = 'flex';
+        document.getElementById('auth-subtitle').innerText = "E-mail confirmado! Agora crie sua senha:";
+        esconderErroAuth();
+      } else {
+        exibirMensagemAuth(data.mensagem || "Código de verificação inválido.", "msg-error", false);
+      }
+    })
+    .catch(() => {
+      btn.innerText = "Confirmar código";
+      btn.disabled = false;
+      exibirMensagemAuth("Erro ao conectar com o servidor.", "msg-error", false);
+    });
+  }
+
   function salvarPrimeiraSenha() {
     const email = document.getElementById('input-cad-email').value.trim().toLowerCase();
     const senha = document.getElementById('input-nova-senha').value;
@@ -1112,7 +1216,7 @@
     fetchComRetry(API_NUVEM_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: "cadastrar_senha", email: email, senha: senha, origemHost: ORIGEM_HOST }),
+      body: JSON.stringify({ action: "cadastrar_senha", email: email, senha: senha, confirmacaoEmail: confirmacaoEmailCadastro, origemHost: ORIGEM_HOST }),
       redirect: 'follow'
     })
     .then(data => {
