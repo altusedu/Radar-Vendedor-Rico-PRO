@@ -685,6 +685,7 @@
           <div class="card"><h4>Taxa de Conversão Realizada</h4><div class="val yellow" id="taxa-conversao">0,0%</div></div>
           <div class="card" style="grid-column: span 2;"><h4>Atendimentos Diários Necessários</h4><div class="val" id="leads-diarios">0 leads/dia</div></div>
         </div>
+        <p id="erro-calculo-meta" class="msg-error" style="display:none; font-size:0.78rem; margin-top:8px;">Não foi possível calcular agora. Verifique sua conexão.</p>
       </div>
 
       <!-- ABA 3: SIMULADOR DE DESCONTO -->
@@ -703,6 +704,7 @@
           <div class="card"><h4>Cenário Simulado</h4><p style="color:var(--text-muted); font-size:0.8rem;">Venda: <span id="venda-simulada">R$ 0,00</span></p><div class="val orange" id="comissao-simulada">R$ 0,00</div></div>
           <div class="card" style="grid-column: span 2; border-color:var(--accent-red);"><h4>Sua Perda</h4><p style="color:var(--text-muted); font-size:0.8rem;">Diferença:</p><div class="val red" id="perda-comissao">- R$ 0,00</div></div>
         </div>
+        <p id="erro-calculo-desconto" class="msg-error" style="display:none; font-size:0.78rem; margin-top:8px;">Não foi possível calcular agora. Verifique sua conexão.</p>
       </div>
 
       <!-- ABA 4: COMISSÕES PENDENTES + RELATÓRIO DE PENDÊNCIAS -->
@@ -2164,55 +2166,109 @@
     return diasUteis || 1;
   }
 
+  // Lógica de cálculo migrada para o backend (actions "calcular_meta"/"calcular_desconto",
+  // como camada extra de proteção anticópia) — aqui só ficam a leitura dos campos, o debounce
+  // pra não disparar uma chamada de rede por tecla digitada, e a escrita do resultado no DOM.
+  function debounce(fn, delayMs) {
+    let timeoutId = null;
+    return function (...args) {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => fn.apply(this, args), delayMs);
+    };
+  }
+
+  function definirOpacidadeResultados(ids, calculando) {
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.style.opacity = calculando ? '0.5' : '1';
+    });
+  }
+
+  function exibirErroCalculadora(idErro, mostrar) {
+    const el = document.getElementById(idErro);
+    if (el) el.style.display = mostrar ? 'block' : 'none';
+  }
+
+  const IDS_RESULTADO_META = ['radar-taxa-conversao', 'taxa-conversao', 'meta-realizada', 'falta-meta', 'meta-diaria', 'leads-diarios'];
+
+  const executarCalculoMetaDebounced = debounce(async function (meta, dias, atendimentosTotais, totalComissaoRealizada, qtdVendasRealizadas) {
+    try {
+      const data = await fetchComRetry(API_NUVEM_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: "calcular_meta", email: usuarioEmail, token: usuarioToken, origemHost: ORIGEM_HOST, meta: meta, dias: dias, atendimentosTotais: atendimentosTotais, totalComissaoRealizada: totalComissaoRealizada, qtdVendasRealizadas: qtdVendasRealizadas }),
+        redirect: 'follow'
+      });
+
+      if (data.status !== "success") throw new Error(data.message || "Erro ao calcular a meta.");
+
+      const taxaExibicao = (data.taxaConversaoDecimal * 100).toFixed(1).replace('.', ',') + '%';
+      document.getElementById('radar-taxa-conversao').innerText = taxaExibicao;
+      document.getElementById('taxa-conversao').innerText = taxaExibicao;
+      document.getElementById('meta-realizada').innerText = formatarMoeda(totalComissaoRealizada);
+      document.getElementById('falta-meta').innerText = formatarMoeda(data.faltaMeta);
+      document.getElementById('meta-diaria').innerText = formatarMoeda(data.metaDiariaVal);
+
+      if (data.faltaMeta === 0 && qtdVendasRealizadas > 0) document.getElementById('leads-diarios').innerText = 'Meta Atingida!';
+      else if (qtdVendasRealizadas === 0) document.getElementById('leads-diarios').innerText = 'Registre 1ª venda';
+      else if (atendimentosTotais === 0) document.getElementById('leads-diarios').innerText = 'Informe os leads';
+      else document.getElementById('leads-diarios').innerText = data.leadsDiariosNecessarios + ' leads/dia';
+
+      exibirErroCalculadora('erro-calculo-meta', false);
+    } catch (err) {
+      exibirErroCalculadora('erro-calculo-meta', true);
+    } finally {
+      definirOpacidadeResultados(IDS_RESULTADO_META, false);
+    }
+  }, 400);
+
   function calcularMeta() {
     const meta = parseMoedaFloat(document.getElementById('meta-mensal').value);
     const dias = parseFloat(document.getElementById('dias-uteis').value) || 1;
     const atendimentosTotais = clientesAtendidosMes || 0;
 
     const vendasPagas = vendas.filter(v => v.status === 'Pago');
-    let totalComissaoRealizada = vendasPagas.reduce((acc, v) => acc + v.comissao, 0);
-    let qtdVendasRealizadas = vendasPagas.length;
+    const totalComissaoRealizada = vendasPagas.reduce((acc, v) => acc + v.comissao, 0);
+    const qtdVendasRealizadas = vendasPagas.length;
 
-    let faltaMeta = meta - totalComissaoRealizada;
-    if (faltaMeta < 0) faltaMeta = 0;
-    let metaDiariaVal = faltaMeta / dias;
-
-    let taxaConversaoDecimal = (atendimentosTotais > 0 && qtdVendasRealizadas > 0) ? (qtdVendasRealizadas / atendimentosTotais) : 0;
-    let comissaoMediaPorVenda = qtdVendasRealizadas > 0 ? (totalComissaoRealizada / qtdVendasRealizadas) : 0;
-    let leadsDiariosNecessarios = 0;
-
-    if (faltaMeta > 0 && comissaoMediaPorVenda > 0 && taxaConversaoDecimal > 0 && dias > 0) {
-      let vendasFaltantes = faltaMeta / comissaoMediaPorVenda;
-      leadsDiariosNecessarios = Math.ceil((vendasFaltantes / taxaConversaoDecimal) / dias);
-    }
-
-    const taxaExibicao = (taxaConversaoDecimal * 100).toFixed(1).replace('.', ',') + '%';
-    document.getElementById('radar-taxa-conversao').innerText = taxaExibicao;
-    document.getElementById('taxa-conversao').innerText = taxaExibicao;
-    document.getElementById('meta-realizada').innerText = formatarMoeda(totalComissaoRealizada);
-    document.getElementById('falta-meta').innerText = formatarMoeda(faltaMeta);
-    document.getElementById('meta-diaria').innerText = formatarMoeda(metaDiariaVal);
-
-    if (faltaMeta === 0 && qtdVendasRealizadas > 0) document.getElementById('leads-diarios').innerText = 'Meta Atingida!';
-    else if (qtdVendasRealizadas === 0) document.getElementById('leads-diarios').innerText = 'Registre 1ª venda';
-    else if (atendimentosTotais === 0) document.getElementById('leads-diarios').innerText = 'Informe os leads';
-    else document.getElementById('leads-diarios').innerText = leadsDiariosNecessarios + ' leads/dia';
+    definirOpacidadeResultados(IDS_RESULTADO_META, true);
+    executarCalculoMetaDebounced(meta, dias, atendimentosTotais, totalComissaoRealizada, qtdVendasRealizadas);
   }
+
+  const IDS_RESULTADO_DESCONTO = ['venda-normal', 'comissao-normal', 'venda-simulada', 'comissao-simulada', 'perda-comissao'];
+
+  const executarCalculoDescontoDebounced = debounce(async function (orig, desc, comissaoPadrao) {
+    try {
+      const data = await fetchComRetry(API_NUVEM_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: "calcular_desconto", email: usuarioEmail, token: usuarioToken, origemHost: ORIGEM_HOST, valorOriginal: orig, descontoPercentual: desc, comissaoPadrao: comissaoPadrao }),
+        redirect: 'follow'
+      });
+
+      if (data.status !== "success") throw new Error(data.message || "Erro ao calcular o desconto.");
+
+      document.getElementById('venda-normal').innerText = formatarMoeda(orig);
+      document.getElementById('comissao-normal').innerText = formatarMoeda(data.comissaoNormal);
+      document.getElementById('venda-simulada').innerText = formatarMoeda(data.precoSimulado);
+      document.getElementById('comissao-simulada').innerText = formatarMoeda(data.comissaoSimulada);
+      document.getElementById('perda-comissao').innerText = '- ' + formatarMoeda(data.perda) + ' (' + String(desc).replace('.', ',') + '%)';
+
+      exibirErroCalculadora('erro-calculo-desconto', false);
+    } catch (err) {
+      exibirErroCalculadora('erro-calculo-desconto', true);
+    } finally {
+      definirOpacidadeResultados(IDS_RESULTADO_DESCONTO, false);
+    }
+  }, 400);
 
   function calcularDesconto() {
     const orig = parseMoedaFloat(document.getElementById('val-original').value);
     const desc = parseFloat(document.getElementById('desc-porcent').value) || 0;
     const comissaoPadrao = parseFloat(document.getElementById('comissao-padrao').value) || 0;
-    const comissaoNormal = orig * (comissaoPadrao / 100);
-    const precoSimulado = orig * (1 - (desc / 100));
-    const comissaoSimulada = precoSimulado * (comissaoPadrao / 100);
-    const perda = comissaoNormal - comissaoSimulada;
 
-    document.getElementById('venda-normal').innerText = formatarMoeda(orig);
-    document.getElementById('comissao-normal').innerText = formatarMoeda(comissaoNormal);
-    document.getElementById('venda-simulada').innerText = formatarMoeda(precoSimulado);
-    document.getElementById('comissao-simulada').innerText = formatarMoeda(comissaoSimulada);
-    document.getElementById('perda-comissao').innerText = '- ' + formatarMoeda(perda) + ' (' + String(desc).replace('.', ',') + '%)';
+    definirOpacidadeResultados(IDS_RESULTADO_DESCONTO, true);
+    executarCalculoDescontoDebounced(orig, desc, comissaoPadrao);
   }
 
   function goHome(ev) {
