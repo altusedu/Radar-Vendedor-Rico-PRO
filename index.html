@@ -466,24 +466,6 @@
   </div>
 </div>
 
-<!-- Modal obrigatório de troca de senha temporária (login via "Esqueci minha senha") -->
-<div class="modal-overlay-onboarding" id="modal-trocar-senha-obrigatoria" style="display: none; z-index: 100003;">
-  <div class="modal-card-onboarding" style="max-width: 420px;">
-    <h3 style="color: var(--accent-orange); margin-top:0;">🔒 Crie sua senha definitiva</h3>
-    <p style="color: var(--text-muted); font-size: 0.88rem;">Você entrou com a senha temporária enviada por e-mail. Antes de continuar, crie uma senha definitiva.</p>
-    <div class="campo-senha-wrapper">
-      <input type="password" id="input-nova-senha-obrigatoria" placeholder="Crie sua senha (mín. 6 dígitos)" style="width:100%;">
-      <button type="button" class="btn-alternar-senha" onclick="alternarVisibilidadeSenha('input-nova-senha-obrigatoria', this)" aria-label="Mostrar senha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
-    </div>
-    <div class="campo-senha-wrapper" style="margin-top: 12px;">
-      <input type="password" id="input-confirma-senha-obrigatoria" placeholder="Confirme a nova senha" style="width:100%;">
-      <button type="button" class="btn-alternar-senha" onclick="alternarVisibilidadeSenha('input-confirma-senha-obrigatoria', this)" aria-label="Mostrar senha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
-    </div>
-    <p id="erro-troca-senha-obrigatoria" class="msg-error" style="display:none; font-size:0.78rem; margin-top:8px;"></p>
-    <button type="button" class="btn-auth" id="btn-salvar-senha-obrigatoria" onclick="salvarNovaSenhaObrigatoria()" style="margin-top: 12px;">Salvar nova senha e continuar</button>
-  </div>
-</div>
-
 <!-- Modal de Leitura do Termo de Consentimento (LGPD) -->
 <div class="modal-overlay-onboarding" id="modal-termo" style="display: none; z-index: 100000;">
   <div class="modal-card-onboarding" style="max-width: 480px;">
@@ -563,9 +545,24 @@
     </div>
 
     <div class="auth-input-group" id="group-recuperacao" style="display: none;">
-      <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 5px;">Enviaremos um token temporário pelo e-mail oficial <b>suporte.rp@altusedu.com.br</b>.</p>
+      <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 5px;">Enviaremos um código de verificação pelo e-mail oficial <b>suporte.rp@altusedu.com.br</b>.</p>
       <input type="email" id="input-recup-email" placeholder="Confirme seu e-mail">
-      <button class="btn-auth" onclick="enviarSolicitacaoRecuperacao()">Enviar Código de Recuperação</button>
+      <button class="btn-auth" onclick="enviarSolicitacaoRecuperacao()">Enviar Código de Verificação</button>
+      <a href="#" onclick="voltarLogin(event)" style="color: var(--text-muted); font-size: 0.78rem; text-decoration: underline; margin-top: 5px; display:inline-block;">Voltar ao Login</a>
+    </div>
+
+    <div class="auth-input-group" id="group-redefinir-senha" style="display: none;">
+      <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 5px;">Digite a senha temporária recebida por e-mail (válida por 30 minutos) e crie sua nova senha:</p>
+      <input type="text" id="input-redef-token" placeholder="Senha temporária (6 dígitos)" inputmode="numeric" maxlength="6">
+      <div class="campo-senha-wrapper">
+        <input type="password" id="input-redef-nova-senha" placeholder="Nova senha (mín. 6 dígitos)">
+        <button type="button" class="btn-alternar-senha" onclick="alternarVisibilidadeSenha('input-redef-nova-senha', this)" aria-label="Mostrar senha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+      </div>
+      <div class="campo-senha-wrapper">
+        <input type="password" id="input-redef-confirma-senha" placeholder="Confirme a nova senha">
+        <button type="button" class="btn-alternar-senha" onclick="alternarVisibilidadeSenha('input-redef-confirma-senha', this)" aria-label="Mostrar senha"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>
+      </div>
+      <button class="btn-auth" onclick="confirmarRedefinicaoSenha()">Redefinir Senha e Entrar</button>
       <a href="#" onclick="voltarLogin(event)" style="color: var(--text-muted); font-size: 0.78rem; text-decoration: underline; margin-top: 5px; display:inline-block;">Voltar ao Login</a>
     </div>
 
@@ -1062,11 +1059,7 @@
         usuarioToken = data.token || "";
         localStorage.setItem(_0x3a2b[1], usuarioEmail);
         localStorage.setItem(_0x3a2b[7], usuarioToken);
-        if (data.precisaTrocarSenha) {
-          abrirModalTrocaSenhaObrigatoria(data.onboardingConcluido);
-        } else {
-          concluirLoginSucesso(data.onboardingConcluido);
-        }
+        concluirLoginSucesso(data.onboardingConcluido);
       } else {
         if (data.erro === "Senha incorreta.") {
           tentativasSenha++;
@@ -1094,6 +1087,7 @@
     e.preventDefault();
     document.getElementById('group-login').style.display = 'none';
     document.getElementById('group-recuperacao').style.display = 'none';
+    document.getElementById('group-redefinir-senha').style.display = 'none';
     document.getElementById('group-cadastro-codigo').style.display = 'none';
     document.getElementById('group-criacao-senha').style.display = 'none';
     document.getElementById('group-cadastro-email').style.display = 'flex';
@@ -1107,6 +1101,7 @@
     document.getElementById('group-cadastro-email').style.display = 'none';
     document.getElementById('group-cadastro-codigo').style.display = 'none';
     document.getElementById('group-criacao-senha').style.display = 'none';
+    document.getElementById('group-redefinir-senha').style.display = 'none';
     document.getElementById('group-recuperacao').style.display = 'flex';
     document.getElementById('auth-subtitle').innerText = "Recuperação de Acesso";
     esconderErroAuth();
@@ -1118,6 +1113,7 @@
     document.getElementById('group-cadastro-codigo').style.display = 'none';
     document.getElementById('group-criacao-senha').style.display = 'none';
     document.getElementById('group-recuperacao').style.display = 'none';
+    document.getElementById('group-redefinir-senha').style.display = 'none';
     document.getElementById('group-login').style.display = 'flex';
     document.getElementById('auth-subtitle').innerText = "Digite seu e-mail e senha de acesso para entrar.";
     emailCadastroAtual = "";
@@ -1300,13 +1296,15 @@
     });
   }
 
+  let emailRecuperacaoAtual = "";
+
   function enviarSolicitacaoRecuperacao() {
     const email = document.getElementById('input-recup-email').value.trim().toLowerCase();
     if (!email || !email.includes('@')) {
       exibirMensagemAuth("Digite seu e-mail cadastrado.", "msg-error", false);
       return;
     }
-    
+
     fetch(API_NUVEM_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -1316,11 +1314,58 @@
     .then(res => res.json())
     .then(data => {
       if (data.status === "sucesso") {
-        alert("Passo a passo de recuperação de senha enviado com sucesso para o seu e-mail!");
-        voltarLogin(event);
+        emailRecuperacaoAtual = email;
+        document.getElementById('group-recuperacao').style.display = 'none';
+        document.getElementById('group-redefinir-senha').style.display = 'flex';
+        document.getElementById('auth-subtitle').innerText = "Digite a senha temporária enviada por e-mail:";
+        esconderErroAuth();
       } else {
         exibirMensagemAuth(data.mensagem || "E-mail não localizado na base da Eduzz.", "msg-error", true);
       }
+    })
+    .catch(() => {
+      exibirMensagemAuth("Erro ao conectar com o servidor.", "msg-error", false);
+    });
+  }
+
+  function confirmarRedefinicaoSenha() {
+    const token = document.getElementById('input-redef-token').value.trim();
+    const senha = document.getElementById('input-redef-nova-senha').value;
+    const confirma = document.getElementById('input-redef-confirma-senha').value;
+
+    if (!token) {
+      exibirMensagemAuth("Digite a senha temporária recebida por e-mail.", "msg-error", false);
+      return;
+    }
+    if (!senha || senha.length < 6) {
+      exibirMensagemAuth("A senha deve ter pelo menos 6 dígitos.", "msg-error", false);
+      return;
+    }
+    if (senha !== confirma) {
+      exibirMensagemAuth("As senhas não coincidem.", "msg-error", false);
+      return;
+    }
+
+    fetch(API_NUVEM_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: "redefinir_senha", email: emailRecuperacaoAtual, token: token, senha: senha, origemHost: ORIGEM_HOST }),
+      redirect: 'follow'
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.status === "sucesso") {
+        usuarioEmail = emailRecuperacaoAtual;
+        usuarioToken = data.token || "";
+        localStorage.setItem(_0x3a2b[1], usuarioEmail);
+        localStorage.setItem(_0x3a2b[7], usuarioToken);
+        concluirLoginSucesso(data.onboardingConcluido);
+      } else {
+        exibirMensagemAuth(data.mensagem || "Não foi possível redefinir a senha.", "msg-error", false);
+      }
+    })
+    .catch(() => {
+      exibirMensagemAuth("Erro ao conectar com o servidor.", "msg-error", false);
     });
   }
 
@@ -1330,11 +1375,7 @@
         if (data && data.autorizado === true) {
           usuarioEmail = email;
           usuarioToken = token;
-          if (data.precisaTrocarSenha) {
-            abrirModalTrocaSenhaObrigatoria(data.onboardingConcluido);
-          } else {
-            concluirLoginSucesso(data.onboardingConcluido);
-          }
+          concluirLoginSucesso(data.onboardingConcluido);
         } else {
           bloquearAcesso();
         }
@@ -1342,62 +1383,6 @@
       .catch(err => {
         bloquearAcesso();
       });
-  }
-
-  let onboardingPendenteAposTrocaSenha = false;
-
-  function abrirModalTrocaSenhaObrigatoria(onboardingConcluidoBackend) {
-    onboardingPendenteAposTrocaSenha = onboardingConcluidoBackend === true;
-    document.getElementById('input-nova-senha-obrigatoria').value = '';
-    document.getElementById('input-confirma-senha-obrigatoria').value = '';
-    document.getElementById('erro-troca-senha-obrigatoria').style.display = 'none';
-    document.getElementById('modal-trocar-senha-obrigatoria').style.display = 'flex';
-  }
-
-  function salvarNovaSenhaObrigatoria() {
-    const senha = document.getElementById('input-nova-senha-obrigatoria').value;
-    const confirma = document.getElementById('input-confirma-senha-obrigatoria').value;
-    const erroEl = document.getElementById('erro-troca-senha-obrigatoria');
-
-    if (!senha || senha.length < 6) {
-      erroEl.innerText = "A senha deve ter pelo menos 6 dígitos.";
-      erroEl.style.display = 'block';
-      return;
-    }
-    if (senha !== confirma) {
-      erroEl.innerText = "As senhas não coincidem.";
-      erroEl.style.display = 'block';
-      return;
-    }
-
-    const btn = document.getElementById('btn-salvar-senha-obrigatoria');
-    btn.innerText = "Salvando...";
-    btn.disabled = true;
-
-    fetchComRetry(API_NUVEM_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: "trocar_senha", email: usuarioEmail, token: usuarioToken, novaSenha: senha, origemHost: ORIGEM_HOST }),
-      redirect: 'follow'
-    })
-    .then(data => {
-      btn.innerText = "Salvar nova senha e continuar";
-      btn.disabled = false;
-
-      if (data.status === "sucesso") {
-        document.getElementById('modal-trocar-senha-obrigatoria').style.display = 'none';
-        concluirLoginSucesso(onboardingPendenteAposTrocaSenha);
-      } else {
-        erroEl.innerText = data.mensagem || "Não foi possível salvar a nova senha.";
-        erroEl.style.display = 'block';
-      }
-    })
-    .catch(() => {
-      btn.innerText = "Salvar nova senha e continuar";
-      btn.disabled = false;
-      erroEl.innerText = "Erro ao conectar com o servidor.";
-      erroEl.style.display = 'block';
-    });
   }
 
   function concluirLoginSucesso(onboardingConcluidoBackend) {
