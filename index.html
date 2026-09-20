@@ -1305,6 +1305,7 @@
       return;
     }
 
+    mostrarLoading("Enviando código...");
     fetch(API_NUVEM_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -1313,6 +1314,7 @@
     })
     .then(res => res.json())
     .then(data => {
+      esconderLoading();
       if (data.status === "sucesso") {
         emailRecuperacaoAtual = email;
         document.getElementById('group-recuperacao').style.display = 'none';
@@ -1324,6 +1326,7 @@
       }
     })
     .catch(() => {
+      esconderLoading();
       exibirMensagemAuth("Erro ao conectar com o servidor.", "msg-error", false);
     });
   }
@@ -1346,6 +1349,7 @@
       return;
     }
 
+    mostrarLoading("Redefinindo senha...");
     fetch(API_NUVEM_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -1354,6 +1358,7 @@
     })
     .then(res => res.json())
     .then(data => {
+      esconderLoading();
       if (data.status === "sucesso") {
         usuarioEmail = emailRecuperacaoAtual;
         usuarioToken = data.token || "";
@@ -1365,6 +1370,7 @@
       }
     })
     .catch(() => {
+      esconderLoading();
       exibirMensagemAuth("Erro ao conectar com o servidor.", "msg-error", false);
     });
   }
