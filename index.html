@@ -516,7 +516,10 @@
       <p style="font-size: 0.82rem; color: var(--accent-yellow); margin-bottom: 5px;">Enviamos um código para o seu e-mail. Digite-o abaixo:</p>
       <input type="text" id="input-cadastro-codigo" placeholder="Código de 6 dígitos" maxlength="6" inputmode="numeric">
       <button class="btn-auth" id="btn-confirmar-codigo-cadastro" onclick="verificarCodigoCadastro()">Confirmar código</button>
-      <a href="#" onclick="voltarLogin(event)" style="color: var(--text-muted); font-size: 0.78rem; text-decoration: underline; margin-top: 5px; display:inline-block;">Cancelar</a>
+      <div style="display: flex; justify-content: space-between; margin-top: 5px; font-size: 0.78rem;">
+        <a href="#" onclick="voltarLogin(event)" style="color: var(--text-muted); text-decoration: underline;">Cancelar</a>
+        <a href="#" id="link-reenviar-codigo-cadastro" onclick="reenviarCodigoCadastro(event)" style="color: var(--accent-orange); font-weight: bold; text-decoration: none;">Reenviar código</a>
+      </div>
     </div>
 
     <div class="auth-input-group" id="group-criacao-senha" style="display: none;">
@@ -1151,6 +1154,35 @@
     .catch(() => {
       btn.innerText = "Continuar";
       btn.disabled = false;
+      exibirMensagemAuth("Erro ao conectar com o servidor.", "msg-error", false);
+    });
+  }
+
+  function reenviarCodigoCadastro(e) {
+    e.preventDefault();
+    if (!emailCadastroAtual) return;
+
+    const link = document.getElementById('link-reenviar-codigo-cadastro');
+    link.innerText = "Reenviando...";
+
+    fetchComRetry(API_NUVEM_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: "solicitar_verificacao_cadastro", email: emailCadastroAtual, origemHost: ORIGEM_HOST }),
+      redirect: 'follow'
+    })
+    .then(data => {
+      link.innerText = "Reenviar código";
+
+      if (data.status === "sucesso") {
+        document.getElementById('auth-subtitle').innerText = "Enviamos um novo código para o seu e-mail.";
+        esconderErroAuth();
+      } else {
+        exibirMensagemAuth(data.mensagem || "Não foi possível reenviar o código.", "msg-error", false);
+      }
+    })
+    .catch(() => {
+      link.innerText = "Reenviar código";
       exibirMensagemAuth("Erro ao conectar com o servidor.", "msg-error", false);
     });
   }
