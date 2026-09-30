@@ -23,6 +23,8 @@
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --border-color: #334155;
+      --chart-meta: #3b82f6;
+      --chart-realizado: #ea580c;
     }
 
     body.light-theme {
@@ -35,6 +37,8 @@
       --text-main: #0f172a;
       --text-muted: #64748b;
       --border-color: #cbd5e1;
+      --chart-meta: #2563eb;
+      --chart-realizado: #ea580c;
     }
 
     * { box-sizing: border-box; -webkit-user-select: none; user-select: none; }
@@ -267,6 +271,31 @@
     .badge { padding: 6px 10px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; }
     .badge-pago { background: rgba(249, 115, 22, 0.2); color: var(--accent-orange); }
     .badge-pendente { background: rgba(234, 179, 8, 0.2); color: var(--accent-yellow); }
+
+    .evolucao-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; margin-bottom: 20px; }
+    .evolucao-card h3 { margin: 0 0 4px; font-size: 1rem; color: var(--text-main); }
+    .evolucao-card .evolucao-sub { margin: 0 0 12px; font-size: 0.82rem; color: var(--text-muted); }
+    .evolucao-legenda { display: flex; gap: 18px; flex-wrap: wrap; font-size: 0.82rem; color: var(--text-muted); margin-bottom: 6px; }
+    .evolucao-legenda span { display: inline-flex; align-items: center; gap: 6px; }
+    .evolucao-swatch { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+    .evolucao-grafico { position: relative; width: 100%; }
+    .evolucao-grafico svg { display: block; font-family: inherit; }
+    .evolucao-grupo { cursor: pointer; transition: opacity 0.15s; }
+    .evolucao-grafico.focando .evolucao-grupo:not(.ativo) { opacity: 0.4; }
+    .evolucao-tooltip { position: absolute; top: 0; left: 0; pointer-events: none; display: none; min-width: 180px; background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 10px; font-size: 0.8rem; color: var(--text-main); box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25); z-index: 5; }
+    .evolucao-tooltip b { display: block; margin-bottom: 4px; }
+    .evolucao-tooltip div { display: flex; align-items: center; gap: 6px; justify-content: space-between; line-height: 1.6; }
+    .evolucao-tooltip div span:first-child { display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); }
+    .evolucao-nota { font-size: 0.8rem; color: var(--text-muted); margin: 10px 0 0; line-height: 1.5; }
+    .evolucao-tabela summary { cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--text-muted); margin-top: 12px; }
+    .evolucao-tabela table { min-width: 0; margin-top: 10px; }
+    .evolucao-tabela th, .evolucao-tabela td { padding: 10px 12px; font-size: 0.85rem; }
+    .evolucao-tabela td:not(:first-child), .evolucao-tabela th:not(:first-child) { text-align: right; }
+    .card .val-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
+    .grid-cards.evolucao-kpis { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .evolucao-kpis .val { font-size: 1.35rem; white-space: nowrap; }
+    @media (max-width: 1180px) { .grid-cards.evolucao-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+    @media (max-width: 480px) { .evolucao-kpis .val { font-size: 1.1rem; } }
 
     .historico-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; margin-bottom: 15px; overflow: hidden; }
     .historico-header { padding: 18px 20px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; background: rgba(255,255,255,0.02); transition: background 0.2s; }
@@ -612,6 +641,7 @@
             <button class="nav-btn" onclick="switchTab('metas', event)">📊 Metas & Conversão</button>
             <button class="nav-btn" onclick="switchTab('checklist', event)">📋 Comissões Pendentes</button>
             <button class="nav-btn" onclick="switchTab('historico', event)">🏛️ Meses Anteriores</button>
+            <button class="nav-btn" onclick="switchTab('evolucao', event)">📈 Sua Evolução</button>
             <button class="nav-btn" onclick="switchTab('calculadora', event)">🔒 Simulador Desconto</button>
             <button class="nav-btn" onclick="switchTab('dicas', event)">🚀 Acelerador de Comissão</button>
             <button class="nav-btn" onclick="switchTab('seguranca', event)">⚙️ Dados & Segurança</button>
@@ -768,6 +798,13 @@
         <div id="container-historico-accordions" style="margin-top: 20px;"></div>
       </div>
 
+      <!-- ABA 5B: SUA EVOLUÇÃO (META X REALIZADO) -->
+      <div id="tab-evolucao" class="tab-content">
+        <h1>Sua Evolução</h1>
+        <p class="subtitle">Sua meta de salário x o que você realizou, mês a mês.</p>
+        <div id="evolucao-conteudo"></div>
+      </div>
+
       <!-- ABA 6: DICAS -->
       <div id="tab-dicas" class="tab-content">
         <h1>Acelerador de Comissões — 20 Dicas de Ouro</h1>
@@ -842,8 +879,13 @@
 
   // ==================== NOVIDADES DA VERSÃO (CHANGELOG) ====================
   // Para anunciar uma novidade nova: atualize APP_VERSION e adicione uma entrada no topo do CHANGELOG.
-  const APP_VERSION = "2026.09.15";
+  const APP_VERSION = "2026.09.30";
   const CHANGELOG = [
+    { versao: "2026.09.30", titulo: "Nova aba: Sua Evolução", itens: [
+      "Gráfico da sua meta de salário x o que você realizou, mês a mês",
+      "Metas batidas, atingimento médio e seu melhor mês num só lugar",
+      "A meta passa a ser registrada a cada fechamento de mês"
+    ]},
     { versao: "2026.09.15", titulo: "Contador de Clientes Atendidos e Relatórios Formatados", itens: [
       "Novo contador de clientes atendidos direto na aba Radar",
       "Relatórios em Excel agora com formatação profissional (moeda, data, percentual)",
@@ -1738,6 +1780,7 @@
   }
 
   function renderHistorico() {
+    renderEvolucao();
     const container = document.getElementById('container-historico-accordions');
     if (!container) return;
     container.innerHTML = '';
@@ -1785,6 +1828,167 @@
       container.appendChild(card);
     });
   }
+
+  // ==================== SUA EVOLUÇÃO (META X REALIZADO) ====================
+  // Barras agrupadas por mês: meta registrada no fechamento x comissão realizada.
+  // SVG desenhado na largura real do contêiner (texto nítido, sem escalar), com dica
+  // por mês (mouse/toque) e a mesma informação em tabela.
+
+  function abreviarMesRef(ref) {
+    const m = String(ref || '').match(/^\s*([A-Za-zÀ-ú]{3})[A-Za-zÀ-ú]*\s*[\/\-\s]\s*(\d{2,4})/);
+    if (!m) return String(ref || '').slice(0, 8);
+    return m[1].charAt(0).toUpperCase() + m[1].slice(1).toLowerCase() + '/' + m[2].slice(-2);
+  }
+
+  function formatarMoedaCurta(valor) {
+    if (valor >= 1000) return 'R$ ' + (valor / 1000).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' mil';
+    return 'R$ ' + Math.round(valor);
+  }
+
+  function passoRedondo(bruto) {
+    const potencia = Math.pow(10, Math.floor(Math.log10(bruto || 1)));
+    return [1, 2, 2.5, 5, 10].map(m => m * potencia).find(p => p >= bruto);
+  }
+
+  // Coluna com topo arredondado (4px) e base reta, crescendo da linha de base.
+  function caminhoColuna(x, y, w, h) {
+    const r = Math.min(4, h, w / 2);
+    return 'M' + x + ',' + (y + h) + 'V' + (y + r) + 'Q' + x + ',' + y + ' ' + (x + r) + ',' + y +
+      'H' + (x + w - r) + 'Q' + (x + w) + ',' + y + ' ' + (x + w) + ',' + (y + r) + 'V' + (y + h) + 'Z';
+  }
+
+  function pontosEvolucao() {
+    return historicoMeses
+      .map((h, i) => ({ h, i, t: Date.parse(h.dataFechamento) || 0 }))
+      .sort((a, b) => a.t - b.t || b.i - a.i)
+      .map(({ h }) => {
+        const meta = Number(h.metaMensal) > 0 ? Number(h.metaMensal) : null;
+        const realizado = Number(h.totalComissao) || 0;
+        const pct = meta ? (Number(h.percentualAtingido) || (realizado / meta) * 100) : null;
+        return { ref: h.refMes, curto: abreviarMesRef(h.refMes), meta, realizado, pct };
+      });
+  }
+
+  function htmlSwatch(cor) {
+    return '<i class="evolucao-swatch" style="background:' + cor + ';"></i>';
+  }
+
+  function renderEvolucao() {
+    const container = document.getElementById('evolucao-conteudo');
+    if (!container || container.offsetParent === null) return;
+    const pontos = pontosEvolucao();
+
+    if (pontos.length === 0) {
+      container.innerHTML = '<div class="evolucao-card"><p class="evolucao-nota" style="margin:0;">Seu gráfico começa no primeiro fechamento de mês. Defina sua meta na aba Metas e feche o mês no Radar de Vendas.</p></div>';
+      return;
+    }
+
+    const comMeta = pontos.filter(p => p.meta);
+    const batidas = comMeta.filter(p => p.pct >= 100).length;
+    const mediaPct = comMeta.length ? comMeta.reduce((a, p) => a + p.pct, 0) / comMeta.length : null;
+    const melhor = pontos.reduce((a, p) => (p.realizado > a.realizado ? p : a), pontos[0]);
+    const ultimo = pontos[pontos.length - 1];
+    const anterior = pontos[pontos.length - 2];
+    const variacao = anterior && anterior.realizado > 0 ? ((ultimo.realizado - anterior.realizado) / anterior.realizado) * 100 : null;
+
+    const cards =
+      '<div class="grid-cards evolucao-kpis">' +
+      '<div class="card"><h4>Metas batidas</h4><div class="val orange">' + (comMeta.length ? batidas + ' de ' + comMeta.length : '—') + '</div><div class="val-sub">' + (comMeta.length ? 'meses com meta registrada' : 'nenhum mês com meta ainda') + '</div></div>' +
+      '<div class="card"><h4>Atingimento médio</h4><div class="val">' + (mediaPct !== null ? formatarPercentualMeta(mediaPct) : '—') + '</div><div class="val-sub">da meta de salário</div></div>' +
+      '<div class="card"><h4>Melhor mês</h4><div class="val">' + formatarMoeda(melhor.realizado) + '</div><div class="val-sub">' + escaparTextoEvolucao(melhor.ref) + '</div></div>' +
+      '<div class="card"><h4>Último mês x anterior</h4><div class="val ' + (variacao === null ? '' : variacao >= 0 ? 'orange' : 'red') + '">' + (variacao === null ? '—' : (variacao >= 0 ? '▲ ' : '▼ ') + formatarPercentualMeta(Math.abs(variacao))) + '</div><div class="val-sub">no realizado</div></div>' +
+      '</div>';
+
+    container.innerHTML = cards +
+      '<div class="evolucao-card">' +
+      '<h3>Meta de salário x Realizado</h3><p class="evolucao-sub" id="evolucao-sub"></p>' +
+      '<div class="evolucao-legenda"><span>' + htmlSwatch('var(--chart-meta)') + 'Meta de salário</span><span>' + htmlSwatch('var(--chart-realizado)') + 'Realizado</span></div>' +
+      '<div class="evolucao-grafico" id="evolucao-grafico"></div>' +
+      (comMeta.length < pontos.length ? '<p class="evolucao-nota">Meses sem barra azul foram fechados antes do registro da meta (a partir de 30/09/2026) ou sem meta definida.</p>' : '') +
+      '<details class="evolucao-tabela"><summary>Ver em tabela</summary><div class="table-responsive"><table><thead><tr><th>Mês</th><th>Meta</th><th>Realizado</th><th>Atingido</th></tr></thead><tbody>' +
+      pontos.slice().reverse().map(p => '<tr><td>' + escaparTextoEvolucao(p.ref) + '</td><td>' + (p.meta ? formatarMoeda(p.meta) : '—') + '</td><td>' + formatarMoeda(p.realizado) + '</td><td>' + (p.pct !== null ? formatarPercentualMeta(p.pct) : '—') + '</td></tr>').join('') +
+      '</tbody></table></div></details>' +
+      '</div>';
+
+    desenharGraficoEvolucao(pontos);
+  }
+
+  function escaparTextoEvolucao(texto) {
+    return String(texto == null ? '' : texto).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  function desenharGraficoEvolucao(todos) {
+    const alvo = document.getElementById('evolucao-grafico');
+    const largura = Math.max(alvo.clientWidth, 280);
+    const limite = largura < 560 ? 6 : 12;
+    const pontos = todos.slice(-limite);
+    document.getElementById('evolucao-sub').innerText = todos.length > limite ? 'Últimos ' + limite + ' meses (todos na tabela abaixo)' : pontos.length + (pontos.length === 1 ? ' mês fechado' : ' meses fechados');
+
+    const altura = 260, mEsq = 64, mDir = 8, mTopo = 24, mBase = 30;
+    const plotW = largura - mEsq - mDir, plotH = altura - mTopo - mBase;
+    const maior = Math.max(...pontos.map(p => Math.max(p.meta || 0, p.realizado)), 1);
+    const passo = passoRedondo(maior / 4);
+    const yMax = Math.ceil(maior / passo) * passo;
+    const y = v => mTopo + plotH * (1 - v / yMax);
+    const faixa = plotW / pontos.length;
+    const barra = Math.max(6, Math.min(24, (faixa - 14) / 2));
+    // % acima de cada mês só quando o rótulo cabe na faixa; senão só no último (o resto fica na dica e na tabela).
+    const rotularTodos = faixa >= 48;
+
+    let svg = '<svg width="' + largura + '" height="' + altura + '" role="img" aria-label="Gráfico de meta de salário versus realizado por mês">';
+    for (let v = 0; v <= yMax + 0.001; v += passo) {
+      svg += '<line x1="' + mEsq + '" x2="' + (largura - mDir) + '" y1="' + y(v) + '" y2="' + y(v) + '" stroke="var(--border-color)" stroke-width="1"/>' +
+        '<text x="' + (mEsq - 8) + '" y="' + (y(v) + 4) + '" text-anchor="end" font-size="11" fill="var(--text-muted)">' + formatarMoedaCurta(v) + '</text>';
+    }
+    pontos.forEach((p, i) => {
+      const cx = mEsq + faixa * i + faixa / 2;
+      const xMeta = cx - 1 - barra, xReal = cx + 1;
+      svg += '<g class="evolucao-grupo" data-i="' + i + '">' +
+        '<rect x="' + (mEsq + faixa * i) + '" y="' + mTopo + '" width="' + faixa + '" height="' + (plotH + mBase) + '" fill="transparent"/>';
+      if (p.meta) svg += '<path d="' + caminhoColuna(xMeta, y(p.meta), barra, y(0) - y(p.meta)) + '" fill="var(--chart-meta)"/>';
+      if (p.realizado > 0) svg += '<path d="' + caminhoColuna(p.meta ? xReal : cx - barra / 2, y(p.realizado), barra, y(0) - y(p.realizado)) + '" fill="var(--chart-realizado)"/>';
+      if (p.pct !== null && (rotularTodos || i === pontos.length - 1)) {
+        svg += '<text x="' + cx + '" y="' + (y(Math.max(p.meta, p.realizado)) - 7) + '" text-anchor="middle" font-size="11" font-weight="700" fill="var(--text-main)">' + formatarPercentualMeta(p.pct) + '</text>';
+      }
+      const rotuloX = faixa < 56 ? p.curto.split('/')[0] : p.curto;
+      svg += '<text x="' + cx + '" y="' + (altura - 10) + '" text-anchor="middle" font-size="11" fill="var(--text-muted)">' + escaparTextoEvolucao(rotuloX) + '</text></g>';
+    });
+    svg += '</svg><div class="evolucao-tooltip" id="evolucao-tooltip"></div>';
+    alvo.innerHTML = svg;
+
+    const tooltip = document.getElementById('evolucao-tooltip');
+    const mostrar = (g, ev) => {
+      const p = pontos[Number(g.dataset.i)];
+      alvo.classList.add('focando');
+      alvo.querySelectorAll('.evolucao-grupo').forEach(el => el.classList.toggle('ativo', el === g));
+      tooltip.innerHTML = '<b>' + escaparTextoEvolucao(p.ref) + '</b>' +
+        '<div><span>' + htmlSwatch('var(--chart-meta)') + 'Meta</span><span>' + (p.meta ? formatarMoeda(p.meta) : 'não registrada') + '</span></div>' +
+        '<div><span>' + htmlSwatch('var(--chart-realizado)') + 'Realizado</span><span>' + formatarMoeda(p.realizado) + '</span></div>' +
+        (p.pct !== null ? '<div><span>Atingido</span><span><b style="display:inline;margin:0;">' + formatarPercentualMeta(p.pct) + '</b></span></div>' : '');
+      tooltip.style.display = 'block';
+      const caixa = alvo.getBoundingClientRect();
+      const px = (ev.clientX || caixa.left + mEsq + faixa * (Number(g.dataset.i) + 0.5)) - caixa.left;
+      const esquerda = Math.min(Math.max(px + 12, 0), largura - tooltip.offsetWidth);
+      tooltip.style.left = (px + 12 + tooltip.offsetWidth > largura ? px - 12 - tooltip.offsetWidth : esquerda) + 'px';
+      tooltip.style.top = (mTopo - 10) + 'px';
+    };
+    const esconder = () => { tooltip.style.display = 'none'; alvo.classList.remove('focando'); };
+    alvo.querySelectorAll('.evolucao-grupo').forEach(g => {
+      g.addEventListener('mousemove', ev => mostrar(g, ev));
+      g.addEventListener('click', ev => mostrar(g, ev));
+    });
+    alvo.addEventListener('mouseleave', esconder);
+  }
+
+  window.addEventListener('resize', debounce(() => renderEvolucao(), 200));
+
+  // No toque não existe "mouseleave": tocar fora de um mês fecha a dica.
+  document.addEventListener('click', ev => {
+    const tooltip = document.getElementById('evolucao-tooltip');
+    if (!tooltip || ev.target.closest('.evolucao-grupo')) return;
+    tooltip.style.display = 'none';
+    document.getElementById('evolucao-grafico').classList.remove('focando');
+  });
 
   function toggleAccordion(index) {
     const body = document.getElementById('acc-body-' + index);
@@ -1865,6 +2069,7 @@
       ev.currentTarget.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
     }
     if (tabId === 'historico') renderHistorico();
+    if (tabId === 'evolucao') renderEvolucao();
     const sidebar = document.getElementById('sidebar-menu');
     if (sidebar && window.innerWidth <= 768) sidebar.classList.remove('open');
   }
