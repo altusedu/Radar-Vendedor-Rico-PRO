@@ -1678,6 +1678,9 @@
     let ticketMedio = qtdVendas ? (totalVendasVal / qtdVendas) : 0;
     let taxaConversao = document.getElementById('radar-taxa-conversao').innerText;
     let totalAtendimentos = clientesAtendidosMes;
+    // Meta registrada = o valor que está no campo da aba Metas no momento do fechamento.
+    let metaMensal = parseMoedaFloat(document.getElementById('meta-mensal').value);
+    let percentualAtingido = metaMensal > 0 ? Math.round((totalComissao / metaMensal) * 1000) / 10 : null;
 
     const registroFechamento = {
       refMes: mesReferencia.trim(),
@@ -1686,25 +1689,22 @@
       ticketMedio: ticketMedio,
       taxaConversao: taxaConversao,
       totalAtendimentos: totalAtendimentos,
+      metaMensal: metaMensal,
+      percentualAtingido: percentualAtingido,
       vendasDetalhes: [...vendasPagas]
     };
 
-    if (confirm('Confirma o fechamento do mês ' + mesReferencia + '?')) {
+    const resumoMeta = metaMensal > 0
+      ? '\n\nMeta do mês: ' + formatarMoeda(metaMensal) + '\nRealizado: ' + formatarMoeda(totalComissao) + ' (' + formatarPercentualMeta(percentualAtingido) + ' da meta)\n\nSe a meta não estiver correta, cancele e ajuste na aba Metas antes de fechar.'
+      : '\n\n⚠️ Nenhuma meta definida na aba Metas — o fechamento será salvo sem meta.';
+
+    if (confirm('Confirma o fechamento do mês ' + mesReferencia + '?' + resumoMeta)) {
       vendas = [...vendasPendentes];
       clientesAtendidosMes = 0;
       persistirAtendimentos();
       renderAtendimentos();
 
-      historicoMeses.unshift({
-        refMes: mesReferencia.trim(),
-        totalComissao: totalComissao,
-        totalVendas: qtdVendas,
-        ticketMedio: ticketMedio,
-        taxaConversao: taxaConversao,
-        totalAtendimentos: totalAtendimentos,
-        dataFechamento: new Date().toISOString(),
-        vendasDetalhes: [...vendasPagas]
-      });
+      historicoMeses.unshift({ ...registroFechamento, dataFechamento: new Date().toISOString() });
       localStorage.setItem(_0x3a2b[3] + usuarioEmail, JSON.stringify(historicoMeses));
 
       sincronizarNuvem(vendas, {
@@ -1748,6 +1748,9 @@
     }
 
     historicoMeses.forEach((h, index) => {
+      const htmlMeta = Number(h.metaMensal) > 0
+        ? '<small style="display:block; color:' + (Number(h.percentualAtingido) >= 100 ? 'var(--accent-orange)' : 'var(--text-muted)') + ';">Meta: ' + formatarMoeda(Number(h.metaMensal)) + ' | Atingido: ' + formatarPercentualMeta(h.percentualAtingido) + '</small>'
+        : '';
       let htmlTabelaVendas = '';
       if (h.vendasDetalhes && h.vendasDetalhes.length > 0) {
         htmlTabelaVendas = '<div class="table-responsive"><table><thead><tr><th>Data</th><th>Cliente</th><th>Valor</th><th>%</th><th>Comissão</th><th>Status</th></tr></thead><tbody>';
@@ -1771,7 +1774,7 @@
       card.innerHTML = '<div class="historico-header" onclick="toggleAccordion(' + index + ')">' +
         '<div><h3 style="margin:0 0 4px 0; color:var(--accent-orange);">' + h.refMes + '</h3><small style="color:var(--text-muted);">Fechado em: ' + (h.dataFechamento ? formatarDataBR(h.dataFechamento) : '-') + '</small></div>' +
         '<div style="display:flex; align-items:center; gap:15px;">' +
-        '<div style="text-align:right;"><div style="font-size:1.2rem; font-weight:bold; color:var(--text-main);">' + formatarMoeda(h.totalComissao) + '</div><small style="color:var(--text-muted);">' + h.totalVendas + ' vendas | Conv: ' + h.taxaConversao + ' | Atendidos: ' + (h.totalAtendimentos || 0) + '</small></div>' +
+        '<div style="text-align:right;"><div style="font-size:1.2rem; font-weight:bold; color:var(--text-main);">' + formatarMoeda(h.totalComissao) + '</div><small style="color:var(--text-muted);">' + h.totalVendas + ' vendas | Conv: ' + h.taxaConversao + ' | Atendidos: ' + (h.totalAtendimentos || 0) + '</small>' + htmlMeta + '</div>' +
         '<button class="icon-btn btn-delete" title="Excluir Fechamento" onclick="excluirMesHistorico(\'' + h.refMes + '\', event)">🗑️</button>' +
         '</div>' +
         '</div>' +
@@ -1835,6 +1838,10 @@
     if (typeof str === 'number') return str;
     if (!str) return 0;
     return parseFloat(str.replace(/[^\d,-]/g, '').replace(',', '.')) || 0;
+  }
+
+  function formatarPercentualMeta(valor) {
+    return Number(valor).toFixed(1).replace('.', ',') + '%';
   }
 
   function formatarMoeda(valor) {
