@@ -1,9 +1,8 @@
-const CACHE_NAME = 'radar-vendedor-rico-v10';
+const CACHE_NAME = 'radar-vendedor-rico-v11';
 const urlsToCache = [
   '/Radar-Vendedor-Rico-PRO/',
   '/Radar-Vendedor-Rico-PRO/index.html',
   '/Radar-Vendedor-Rico-PRO/manifest.json',
-  '/Radar-Vendedor-Rico-PRO/logo-customizada.png',
   '/Radar-Vendedor-Rico-PRO/logo-dark.png',
   '/Radar-Vendedor-Rico-PRO/logo-light.png',
   '/Radar-Vendedor-Rico-PRO/icon-192.png',
