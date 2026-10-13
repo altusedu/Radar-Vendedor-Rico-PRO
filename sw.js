@@ -1,4 +1,4 @@
-const CACHE_NAME = 'radar-vendedor-rico-v13';
+const CACHE_NAME = 'radar-vendedor-rico-v14';
 const urlsToCache = [
   '/Radar-Vendedor-Rico-PRO/',
   '/Radar-Vendedor-Rico-PRO/index.html',
@@ -35,6 +35,9 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // API (Apps Script) e qualquer POST vão direto pra rede: respostas com dados do aluno
+  // (incluindo a lista de aulas) nunca passam pelo cache do service worker.
+  if (event.request.method !== 'GET' || event.request.url.indexOf('script.google.com') !== -1) return;
   event.respondWith(
     caches.match(event.request).then((response) => {
       return response || fetch(event.request);

@@ -48,6 +48,9 @@
       margin: 0 !important; padding: 0 !important; width: 100% !important; height: 100% !important;
       background-color: var(--bg-dark); color: var(--text-main); font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
+    /* As variáveis do tema claro ficam no body; sem isto o <html> continuava escuro e aparecia
+       como uma faixa embaixo das abas mais longas que a tela. */
+    html:has(> body.light-theme) { background-color: #f1f5f9; }
 
     input[type="checkbox"] {
       width: 18px; height: 18px; cursor: pointer; accent-color: var(--accent-orange); vertical-align: middle;
@@ -320,6 +323,36 @@
     .tip-card { background: var(--card-bg); border-left: 4px solid var(--accent-orange); padding: 18px; margin-bottom: 15px; border-radius: 0 8px 8px 0; }
     .tip-card h3 { font-size: 1.05rem; margin-bottom: 6px; color: var(--text-main); }
     .tip-card p { font-size: 0.95rem; color: var(--text-muted); line-height: 1.5; }
+
+    .aulas-layout { display: grid; gap: 20px; max-width: 1200px; }
+    @media (min-width: 1100px) { .aulas-layout { grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); align-items: start; } }
+    .aula-player { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color); }
+    .aula-player iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    .aula-ordem-atual { margin-top: 16px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--accent-orange); }
+    .aula-titulo-atual { margin: 4px 0 0; font-size: 1.15rem; line-height: 1.35; color: var(--text-main); }
+    .aula-acoes { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+    .aula-acoes button { flex: 1; min-width: 160px; padding: 13px 16px; border-radius: 8px; font-weight: 700; font-size: 0.9rem; font-family: inherit; cursor: pointer; border: 1px solid var(--border-color); }
+    .aula-acoes button:disabled { cursor: default; }
+    .btn-aula-concluir { background: var(--accent-orange); color: #fff; border-color: var(--accent-orange) !important; }
+    .btn-aula-concluir.feita { background: rgba(249, 115, 22, 0.12); color: var(--accent-orange); }
+    .btn-aula-proxima { background: var(--card-bg); color: var(--text-main); }
+    .btn-aula-proxima:disabled { opacity: 0.55; }
+    .aula-msg { margin: 8px 0 0; min-height: 1.2em; font-size: 0.82rem; color: var(--accent-red); }
+    .aulas-lista-card { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; }
+    .aulas-progresso-texto { display: flex; justify-content: space-between; gap: 10px; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; }
+    .aulas-progresso-texto b { color: var(--text-main); }
+    .aulas-barra { height: 6px; background: var(--border-color); border-radius: 99px; overflow: hidden; margin-bottom: 14px; }
+    .aulas-barra span { display: block; height: 100%; background: var(--accent-orange); border-radius: 99px; transition: width 0.3s; }
+    .aulas-lista { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+    .aula-item { width: 100%; display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: transparent; border: 1px solid transparent; border-radius: 8px; color: var(--text-main); text-align: left; cursor: pointer; font-size: 0.92rem; font-family: inherit; }
+    .aula-item:hover { background: rgba(249, 115, 22, 0.06); }
+    .aula-item.ativa { background: rgba(249, 115, 22, 0.12); border-color: var(--accent-orange); }
+    .aula-num { flex: 0 0 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; background: var(--bg-dark); color: var(--text-muted); border: 1px solid var(--border-color); }
+    .aula-item.concluida .aula-num { background: var(--accent-orange); color: #fff; border-color: var(--accent-orange); }
+    .aula-item-titulo { flex: 1; line-height: 1.35; }
+    .aula-item-status { font-size: 0.72rem; font-weight: 700; color: var(--accent-orange); white-space: nowrap; }
+    .aulas-aviso { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+    .aulas-aviso .aula-acoes { margin-top: 0; width: 100%; max-width: 260px; }
 
     .app-footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border-color); text-align: center; color: var(--text-muted); font-size: 0.8rem; }
 
@@ -645,6 +678,7 @@
             <button class="nav-btn" onclick="switchTab('checklist', event)">📋 Comissões Pendentes</button>
             <button class="nav-btn" onclick="switchTab('historico', event)">🏛️ Meses Anteriores</button>
             <button class="nav-btn" onclick="switchTab('evolucao', event)">📈 Sua Evolução</button>
+            <button class="nav-btn" onclick="switchTab('aulas', event)">▶️ Primeiros Passos</button>
             <button class="nav-btn" onclick="switchTab('calculadora', event)">🔒 Simulador Desconto</button>
             <button class="nav-btn" onclick="switchTab('dicas', event)">🚀 Acelerador de Comissão</button>
             <button class="nav-btn" onclick="switchTab('seguranca', event)">⚙️ Dados & Segurança</button>
@@ -806,6 +840,13 @@
         <div id="evolucao-conteudo"></div>
       </div>
 
+      <!-- ABA 5C: PRIMEIROS PASSOS (AULAS BÔNUS) -->
+      <div id="tab-aulas" class="tab-content">
+        <h1>▶️ Primeiros Passos</h1>
+        <p class="subtitle">Aulas curtas para você usar o Radar do jeito certo desde o primeiro dia.</p>
+        <div id="aulas-conteudo"></div>
+      </div>
+
       <!-- ABA 6: DICAS -->
       <div id="tab-dicas" class="tab-content">
         <h1>Acelerador de Comissões — 20 Dicas de Ouro</h1>
@@ -880,8 +921,13 @@
 
   // ==================== NOVIDADES DA VERSÃO (CHANGELOG) ====================
   // Para anunciar uma novidade nova: atualize APP_VERSION e adicione uma entrada no topo do CHANGELOG.
-  const APP_VERSION = "2026.09.30";
+  const APP_VERSION = "2026.10.13";
   const CHANGELOG = [
+    { versao: "2026.10.13", titulo: "Nova aba: Primeiros Passos", itens: [
+      "11 aulas em vídeo mostrando o Radar na prática, do cadastro ao fechamento do mês",
+      "Assista direto no app, no celular ou no computador",
+      "Marque as aulas concluídas e acompanhe o seu progresso"
+    ]},
     { versao: "2026.09.30", titulo: "Nova aba: Sua Evolução", itens: [
       "Gráfico da sua meta de salário x o que você realizou, mês a mês",
       "Metas batidas, atingimento médio e seu melhor mês num só lugar",
@@ -915,7 +961,10 @@
   let confirmacaoEmailCadastro = "";
 
   // Gerenciamento de Inatividade (10 minutos)
+  let ultimaAtividadeUsuario = Date.now();
+
   function reiniciarTemporizadorInatividade() {
+    ultimaAtividadeUsuario = Date.now();
     clearTimeout(timerInatividade);
     timerInatividade = setTimeout(() => {
       fazerLogoutPorInatividade();
@@ -923,6 +972,13 @@
   }
 
   function fazerLogoutPorInatividade() {
+    // Cliques dentro do player do Drive (iframe de outro domínio) não chegam aos ouvintes de
+    // atividade, então quem está assistindo uma aula parece parado. Nessa situação o logout
+    // espera até 1h desde a última interação com o app, em vez de 10 minutos.
+    if (assistindoAulaBonus() && Date.now() - ultimaAtividadeUsuario < 60 * 60 * 1000) {
+      timerInatividade = setTimeout(fazerLogoutPorInatividade, 10 * 60 * 1000);
+      return;
+    }
     alert("⏰ Sessão encerrada por inatividade superior a 10 minutos.");
     fazerLogout();
   }
@@ -943,6 +999,7 @@
     localStorage.removeItem(_0x3a2b[7]);
     usuarioEmail = "";
     usuarioToken = "";
+    limparAulasBonus();
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('app-main-content').style.display = 'none';
     const topbar = document.getElementById('mobile-topbar-header');
@@ -1047,6 +1104,7 @@
     localStorage.removeItem(_0x3a2b[7]);
     usuarioEmail = "";
     usuarioToken = "";
+    limparAulasBonus();
     esconderErroAuth();
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('app-main-content').style.display = 'none';
@@ -1918,6 +1976,205 @@
     return String(texto == null ? '' : texto).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   }
 
+  // ==================== PRIMEIROS PASSOS (AULAS BÔNUS) ====================
+  // Os IDs dos vídeos do Drive vêm só do backend (listar_aulas, com sessão válida) e ficam só
+  // nesta variável em memória — nunca em localStorage. O logout limpa tudo.
+  // "Concluída" é marcada pelo botão: o player do Drive é um iframe de outro domínio e não
+  // informa ao app quanto do vídeo foi assistido.
+  let aulasBonus = null; // { aulas: [{ aula_id, ordem, titulo, drive_file_id }], progresso: { aula_id: { concluida } } }
+  let aulaBonusAtualId = "";
+  let carregandoAulasBonus = false;
+
+  function aulaBonusConcluida(aulaId) {
+    return !!(aulasBonus && aulasBonus.progresso[aulaId] && aulasBonus.progresso[aulaId].concluida);
+  }
+
+  function abrirPrimeirosPassos() {
+    if (!aulasBonus) { carregarAulasBonus(); return; }
+    if (!document.getElementById('aula-player')) montarEstruturaAulas();
+    selecionarAula(aulaBonusAtualId, false);
+  }
+
+  function carregarAulasBonus() {
+    if (carregandoAulasBonus) return;
+    carregandoAulasBonus = true;
+    const container = document.getElementById('aulas-conteudo');
+    container.innerHTML = '<div class="evolucao-card"><p class="evolucao-nota" style="margin:0;">Carregando as aulas...</p></div>';
+
+    fetchComRetry(API_NUVEM_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: "listar_aulas", email: usuarioEmail, token: usuarioToken, origemHost: ORIGEM_HOST }),
+      redirect: 'follow'
+    })
+    .then(data => {
+      if (!data || data.status !== 'success' || !Array.isArray(data.aulas)) throw new Error('lista indisponível');
+      if (!usuarioToken) return; // saiu do app enquanto carregava
+      if (data.aulas.length === 0) {
+        mostrarAvisoAulas('As aulas estão sendo preparadas. Volte daqui a pouco!');
+        return;
+      }
+      aulasBonus = { aulas: data.aulas, progresso: data.progresso || {} };
+      const primeiraPendente = aulasBonus.aulas.find(a => !aulaBonusConcluida(a.aula_id)) || aulasBonus.aulas[0];
+      montarEstruturaAulas();
+      // Se o aluno já saiu da aba enquanto carregava, não liga o player escondido.
+      if (document.getElementById('tab-aulas').classList.contains('active')) selecionarAula(primeiraPendente.aula_id, false);
+      else aulaBonusAtualId = primeiraPendente.aula_id;
+    })
+    .catch(() => {
+      mostrarAvisoAulas('Não conseguimos carregar as aulas agora. Confira sua internet e tente de novo.');
+    })
+    .finally(() => { carregandoAulasBonus = false; });
+  }
+
+  function mostrarAvisoAulas(texto) {
+    document.getElementById('aulas-conteudo').innerHTML =
+      '<div class="evolucao-card aulas-aviso">' +
+        '<p class="evolucao-nota" style="margin:0;">' + escaparTextoEvolucao(texto) + '</p>' +
+        '<div class="aula-acoes"><button class="btn-aula-proxima" onclick="carregarAulasBonus()">↻ Tentar de novo</button></div>' +
+      '</div>';
+  }
+
+  // Monta o esqueleto uma vez; depois só o painel é atualizado, para marcar uma aula como
+  // concluída sem recarregar (e interromper) o vídeo que está tocando.
+  function montarEstruturaAulas() {
+    document.getElementById('aulas-conteudo').innerHTML =
+      '<div class="aulas-layout">' +
+        '<div>' +
+          '<div class="aula-player" id="aula-player"></div>' +
+          '<div class="aula-ordem-atual" id="aula-ordem-atual"></div>' +
+          '<h2 class="aula-titulo-atual" id="aula-titulo-atual"></h2>' +
+          '<div class="aula-acoes">' +
+            '<button class="btn-aula-concluir" id="btn-aula-concluir" onclick="marcarAulaConcluida()"></button>' +
+            '<button class="btn-aula-proxima" id="btn-aula-proxima" onclick="irParaProximaAula()"></button>' +
+          '</div>' +
+          '<p class="aula-msg" id="aula-msg" role="status"></p>' +
+        '</div>' +
+        '<div class="aulas-lista-card">' +
+          '<div class="aulas-progresso-texto"><span id="aulas-contador"></span></div>' +
+          '<div class="aulas-barra"><span id="aulas-barra"></span></div>' +
+          '<ol class="aulas-lista" id="aulas-lista"></ol>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function atualizarPainelAulas() {
+    if (!aulasBonus || !document.getElementById('aula-player')) return;
+    const aulas = aulasBonus.aulas;
+    const indice = Math.max(0, aulas.findIndex(a => a.aula_id === aulaBonusAtualId));
+    const atual = aulas[indice];
+    const proxima = aulas[indice + 1];
+    const feita = aulaBonusConcluida(atual.aula_id);
+    const concluidas = aulas.filter(a => aulaBonusConcluida(a.aula_id)).length;
+
+    document.getElementById('aula-ordem-atual').textContent = 'Aula ' + (indice + 1) + ' de ' + aulas.length;
+    document.getElementById('aula-titulo-atual').textContent = atual.titulo;
+
+    const btnConcluir = document.getElementById('btn-aula-concluir');
+    btnConcluir.textContent = feita ? '✓ Aula concluída' : 'Marcar como concluída';
+    btnConcluir.classList.toggle('feita', feita);
+    btnConcluir.disabled = feita;
+
+    const btnProxima = document.getElementById('btn-aula-proxima');
+    btnProxima.textContent = proxima ? 'Próxima aula →' : 'Esta é a última aula';
+    btnProxima.disabled = !proxima;
+
+    document.getElementById('aulas-contador').innerHTML = '<b>' + concluidas + ' de ' + aulas.length + '</b> aulas concluídas';
+    document.getElementById('aulas-barra').style.width = (aulas.length ? (concluidas / aulas.length) * 100 : 0) + '%';
+
+    document.getElementById('aulas-lista').innerHTML = aulas.map((a, i) => {
+      const concluida = aulaBonusConcluida(a.aula_id);
+      const ativa = a.aula_id === atual.aula_id;
+      return '<li><button class="aula-item' + (ativa ? ' ativa' : '') + (concluida ? ' concluida' : '') + '"' +
+        ' onclick="selecionarAula(\'' + escaparTextoEvolucao(a.aula_id) + '\', true)"' + (ativa ? ' aria-current="true"' : '') + '>' +
+        '<span class="aula-num">' + (concluida ? '✓' : (i + 1)) + '</span>' +
+        '<span class="aula-item-titulo">' + escaparTextoEvolucao(a.titulo) + '</span>' +
+        (ativa ? '<span class="aula-item-status">▶ Assistindo</span>' : '') +
+      '</button></li>';
+    }).join('');
+  }
+
+  // Só um iframe por vez, criado quando o aluno escolhe a aula.
+  function montarPlayerAula(aula) {
+    const player = document.getElementById('aula-player');
+    if (!player) return;
+    const iframe = document.createElement('iframe');
+    iframe.src = 'https://drive.google.com/file/d/' + encodeURIComponent(aula.drive_file_id) + '/preview';
+    iframe.allow = 'autoplay; fullscreen';
+    iframe.allowFullscreen = true;
+    iframe.title = aula.titulo;
+    player.replaceChildren(iframe);
+  }
+
+  function pausarPlayerAulas() {
+    const player = document.getElementById('aula-player');
+    if (player) player.replaceChildren();
+  }
+
+  function assistindoAulaBonus() {
+    const aba = document.getElementById('tab-aulas');
+    return !!(aba && aba.classList.contains('active') && document.querySelector('#aula-player iframe') && !document.hidden);
+  }
+
+  function selecionarAula(aulaId, rolarAtePlayer) {
+    if (!aulasBonus) return;
+    const aula = aulasBonus.aulas.find(a => a.aula_id === aulaId) || aulasBonus.aulas[0];
+    aulaBonusAtualId = aula.aula_id;
+    montarPlayerAula(aula);
+    atualizarPainelAulas();
+    document.getElementById('aula-msg').textContent = '';
+    if (rolarAtePlayer && window.innerWidth < 1100) {
+      document.getElementById('aula-player').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    // Primeira abertura: registra uma vez (o backend também não duplica).
+    if (!aulasBonus.progresso[aula.aula_id]) {
+      aulasBonus.progresso[aula.aula_id] = { concluida: false };
+      registrarProgressoAula(aula.aula_id, 'abertura').catch(() => {});
+    }
+  }
+
+  function irParaProximaAula() {
+    if (!aulasBonus) return;
+    const indice = aulasBonus.aulas.findIndex(a => a.aula_id === aulaBonusAtualId);
+    const proxima = aulasBonus.aulas[indice + 1];
+    if (proxima) selecionarAula(proxima.aula_id, true);
+  }
+
+  function registrarProgressoAula(aulaId, evento) {
+    return fetchComRetry(API_NUVEM_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: "registrar_progresso_aula", email: usuarioEmail, token: usuarioToken, aula_id: aulaId, evento: evento, origemHost: ORIGEM_HOST }),
+      redirect: 'follow'
+    }).then(data => {
+      if (!data || data.status !== 'success') throw new Error('progresso não registrado');
+      return data;
+    });
+  }
+
+  function marcarAulaConcluida() {
+    if (!aulasBonus || aulaBonusConcluida(aulaBonusAtualId)) return;
+    const aulaId = aulaBonusAtualId;
+    const anterior = aulasBonus.progresso[aulaId];
+    aulasBonus.progresso[aulaId] = { concluida: true };
+    atualizarPainelAulas();
+    registrarProgressoAula(aulaId, 'concluida').catch(() => {
+      if (!aulasBonus) return;
+      if (anterior) aulasBonus.progresso[aulaId] = anterior; else delete aulasBonus.progresso[aulaId];
+      atualizarPainelAulas();
+      const msg = document.getElementById('aula-msg');
+      if (msg && aulaBonusAtualId === aulaId) msg.textContent = 'Não foi possível salvar agora. Tente marcar de novo em instantes.';
+    });
+  }
+
+  function limparAulasBonus() {
+    aulasBonus = null;
+    aulaBonusAtualId = "";
+    const container = document.getElementById('aulas-conteudo');
+    if (container) container.replaceChildren();
+  }
+  // ==================== FIM PRIMEIROS PASSOS ====================
+
   function desenharGraficoEvolucao(todos) {
     const alvo = document.getElementById('evolucao-grafico');
     const largura = Math.max(alvo.clientWidth, 280);
@@ -2072,6 +2329,8 @@
     }
     if (tabId === 'historico') renderHistorico();
     if (tabId === 'evolucao') renderEvolucao();
+    if (tabId === 'aulas') abrirPrimeirosPassos();
+    else pausarPlayerAulas();
     const sidebar = document.getElementById('sidebar-menu');
     if (sidebar && window.innerWidth <= 768) sidebar.classList.remove('open');
   }
