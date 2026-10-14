@@ -106,6 +106,14 @@
 
     .sidebar-inner-content { padding: 16px 20px; display: flex; flex-direction: column; gap: 16px; }
     .sidebar-user-block { border-bottom: 1px solid var(--border-color); padding-bottom: 16px; }
+    .btn-primeiros-passos {
+      width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 11px 12px;
+      border: none; border-radius: 6px; background: linear-gradient(135deg, var(--accent-orange), #ea580c); color: #fff;
+      font-family: inherit; font-weight: 700; font-size: 0.88rem; cursor: pointer;
+      box-shadow: 0 4px 14px rgba(249, 115, 22, 0.25); transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-primeiros-passos:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(249, 115, 22, 0.35); }
+    .btn-primeiros-passos.active { box-shadow: 0 0 0 2px var(--card-bg), 0 0 0 4px var(--accent-orange); }
     .nav-frame { background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 12px; padding: 10px; }
 
     .mobile-topbar {
@@ -671,6 +679,8 @@
           </div>
         </div>
 
+        <button class="btn-primeiros-passos" id="btn-primeiros-passos" onclick="switchTab('aulas', event)">▶️ Primeiros Passos</button>
+
         <div class="nav-frame">
           <div class="nav-btn-group" id="nav-container">
             <button class="nav-btn active" id="nav-btn-radar" onclick="switchTab('radar', event)">📡 Radar de Vendas</button>
@@ -678,7 +688,6 @@
             <button class="nav-btn" onclick="switchTab('checklist', event)">📋 Comissões Pendentes</button>
             <button class="nav-btn" onclick="switchTab('historico', event)">🏛️ Meses Anteriores</button>
             <button class="nav-btn" onclick="switchTab('evolucao', event)">📈 Sua Evolução</button>
-            <button class="nav-btn" onclick="switchTab('aulas', event)">▶️ Primeiros Passos</button>
             <button class="nav-btn" onclick="switchTab('calculadora', event)">🔒 Simulador Desconto</button>
             <button class="nav-btn" onclick="switchTab('dicas', event)">🚀 Acelerador de Comissão</button>
             <button class="nav-btn" onclick="switchTab('seguranca', event)">⚙️ Dados & Segurança</button>
@@ -2329,6 +2338,7 @@
     }
     if (tabId === 'historico') renderHistorico();
     if (tabId === 'evolucao') renderEvolucao();
+    document.getElementById('btn-primeiros-passos').classList.toggle('active', tabId === 'aulas');
     if (tabId === 'aulas') abrirPrimeirosPassos();
     else pausarPlayerAulas();
     const sidebar = document.getElementById('sidebar-menu');
