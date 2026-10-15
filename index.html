@@ -334,8 +334,55 @@
 
     .aulas-layout { display: grid; gap: 20px; max-width: 1200px; }
     @media (min-width: 1100px) { .aulas-layout { grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); align-items: start; } }
-    .aula-player { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color); }
-    .aula-player iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    /* Player próprio: o YouTube toca por baixo, sem os controles dele; por cima ficam a camada de toque
+       (nada do YouTube é clicável, nem em tela cheia) e os nossos controles. */
+    .aula-player { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color); user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+    .aula-player iframe, .aula-player .yt-alvo { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    .player-toque { position: absolute; inset: 0; z-index: 2; cursor: pointer; }
+    .player-capa, .player-fim, .player-erro, .player-carregando { position: absolute; inset: 0; z-index: 4; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 16px; text-align: center; color: #fff; }
+    .player-capa { background: radial-gradient(circle at 50% 40%, #1e293b 0%, #0b1120 75%); cursor: pointer; }
+    .player-capa-num { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-orange); }
+    .player-capa-titulo { font-size: clamp(0.95rem, 3.6vw, 1.3rem); font-weight: 700; line-height: 1.3; max-width: 90%; }
+    .player-play-grande { width: 64px; height: 64px; border-radius: 50%; border: none; background: var(--accent-orange); color: #fff; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 8px 24px rgba(249, 115, 22, 0.4); transition: transform 0.15s; }
+    .player-play-grande:hover { transform: scale(1.06); }
+    .player-play-grande svg { width: 28px; height: 28px; margin-left: 3px; }
+    .player-centro { position: absolute; inset: 0; z-index: 3; display: none; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.45); pointer-events: none; }
+    .player-fim { background: #0b1120; }
+    .player-fim strong { font-size: 1.05rem; }
+    .player-fim-acoes { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+    .player-fim-acoes button { padding: 10px 14px; border-radius: 8px; font-family: inherit; font-weight: 700; font-size: 0.82rem; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(255, 255, 255, 0.08); color: #fff; }
+    .player-fim-acoes button.principal { background: var(--accent-orange); border-color: var(--accent-orange); }
+    .player-fim-acoes button:disabled { opacity: 0.6; cursor: default; }
+    .player-erro { background: #0b1120; font-size: 0.9rem; color: #cbd5e1; }
+    .player-carregando { pointer-events: none; }
+    .player-spinner { width: 42px; height: 42px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, 0.25); border-top-color: var(--accent-orange); animation: player-girar 0.8s linear infinite; }
+    @keyframes player-girar { to { transform: rotate(360deg); } }
+    .player-controles { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; padding: 18px 10px 6px; background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent); color: #fff; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
+    .player-linha { display: flex; align-items: center; gap: 2px; }
+    .player-btn { background: none; border: none; color: #fff; width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 0.78rem; font-weight: 700; flex-shrink: 0; }
+    .player-btn:hover { background: rgba(255, 255, 255, 0.12); }
+    .player-btn svg { width: 22px; height: 22px; }
+    .player-btn.vel { width: auto; min-width: 38px; padding: 0 6px; }
+    .player-tempo { font-size: 0.75rem; font-variant-numeric: tabular-nums; white-space: nowrap; margin-left: 4px; opacity: 0.9; }
+    .player-espaco { flex: 1; }
+    .aula-player .player-progresso { -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 18px; min-height: 0; margin: 0 0 2px; padding: 0; border: none; border-radius: 0; background: transparent; box-shadow: none; outline: none; cursor: pointer; --pct: 0%; }
+    .player-progresso::-webkit-slider-runnable-track { height: 4px; border-radius: 99px; background: linear-gradient(to right, var(--accent-orange) var(--pct), rgba(255, 255, 255, 0.3) var(--pct)); }
+    .player-progresso::-moz-range-track { height: 4px; border-radius: 99px; background: linear-gradient(to right, var(--accent-orange) var(--pct), rgba(255, 255, 255, 0.3) var(--pct)); }
+    .player-progresso::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; margin-top: -5px; border-radius: 50%; background: var(--accent-orange); border: none; }
+    .player-progresso::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--accent-orange); border: none; }
+    .aula-player.estado-capa .player-capa,
+    .aula-player.estado-fim .player-fim,
+    .aula-player.estado-erro .player-erro,
+    .aula-player.estado-carregando .player-carregando,
+    .aula-player.estado-pausado .player-centro { display: flex; }
+    .aula-player.estado-pausado .player-controles,
+    .aula-player.estado-tocando.controles-visiveis .player-controles { opacity: 1; pointer-events: auto; }
+    .aula-player.estado-tocando:not(.controles-visiveis) { cursor: none; }
+    .aula-player:fullscreen { aspect-ratio: auto; width: 100%; height: 100%; border-radius: 0; border: none; }
+    .aula-player:-webkit-full-screen { aspect-ratio: auto; width: 100%; height: 100%; border-radius: 0; border: none; }
+    /* iPhone: o Safari só deixa colocar em tela cheia o próprio <video>, então a moldura ocupa a tela toda. */
+    .aula-player.tela-cheia-simulada { position: fixed; inset: 0; z-index: 5000; aspect-ratio: auto; width: 100vw; height: 100vh; height: 100dvh; border-radius: 0; border: none; }
+    body.player-tela-cheia-aberta { overflow: hidden; }
     .aula-ordem-atual { margin-top: 16px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--accent-orange); }
     .aula-titulo-atual { margin: 4px 0 0; font-size: 1.15rem; line-height: 1.35; color: var(--text-main); }
     .aula-acoes { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
@@ -930,8 +977,13 @@
 
   // ==================== NOVIDADES DA VERSÃO (CHANGELOG) ====================
   // Para anunciar uma novidade nova: atualize APP_VERSION e adicione uma entrada no topo do CHANGELOG.
-  const APP_VERSION = "2026.10.13";
+  const APP_VERSION = "2026.10.15";
   const CHANGELOG = [
+    { versao: "2026.10.15", titulo: "Player novo nas aulas Primeiros Passos", itens: [
+      "Vídeos mais leves e estáveis no celular, assistindo direto no app",
+      "Escolha a velocidade (1,25x, 1,5x ou 2x) e volte ou avance 10 segundos",
+      "A aula continua de onde você parou"
+    ]},
     { versao: "2026.10.13", titulo: "Nova aba: Primeiros Passos", itens: [
       "11 aulas em vídeo mostrando o Radar na prática, do cadastro ao fechamento do mês",
       "Assista direto no app, no celular ou no computador",
@@ -981,9 +1033,8 @@
   }
 
   function fazerLogoutPorInatividade() {
-    // Cliques dentro do player do Drive (iframe de outro domínio) não chegam aos ouvintes de
-    // atividade, então quem está assistindo uma aula parece parado. Nessa situação o logout
-    // espera até 1h desde a última interação com o app, em vez de 10 minutos.
+    // Quem só está assistindo uma aula não mexe no app e parece parado. Com um vídeo tocando,
+    // o logout espera até 1h desde a última interação com o app, em vez de 10 minutos.
     if (assistindoAulaBonus() && Date.now() - ultimaAtividadeUsuario < 60 * 60 * 1000) {
       timerInatividade = setTimeout(fazerLogoutPorInatividade, 10 * 60 * 1000);
       return;
@@ -1986,11 +2037,10 @@
   }
 
   // ==================== PRIMEIROS PASSOS (AULAS BÔNUS) ====================
-  // Os IDs dos vídeos do Drive vêm só do backend (listar_aulas, com sessão válida) e ficam só
-  // nesta variável em memória — nunca em localStorage. O logout limpa tudo.
-  // "Concluída" é marcada pelo botão: o player do Drive é um iframe de outro domínio e não
-  // informa ao app quanto do vídeo foi assistido.
-  let aulasBonus = null; // { aulas: [{ aula_id, ordem, titulo, drive_file_id }], progresso: { aula_id: { concluida } } }
+  // Os IDs dos vídeos (YouTube não listado) vêm só do backend (listar_aulas, com sessão válida) e
+  // ficam só nesta variável em memória — nunca em localStorage. O logout limpa tudo.
+  // "Concluída" é marcada pelo botão do aluno.
+  let aulasBonus = null; // { aulas: [{ aula_id, ordem, titulo, youtube_id }], progresso: { aula_id: { concluida } } }
   let aulaBonusAtualId = "";
   let carregandoAulasBonus = false;
 
@@ -2000,8 +2050,8 @@
 
   function abrirPrimeirosPassos() {
     if (!aulasBonus) { carregarAulasBonus(); return; }
-    if (!document.getElementById('aula-player')) montarEstruturaAulas();
-    selecionarAula(aulaBonusAtualId, false);
+    if (!document.getElementById('aula-player')) { montarEstruturaAulas(); selecionarAula(aulaBonusAtualId, false, false); return; }
+    atualizarPainelAulas(); // volta à aba: o player fica como estava (pausado na mesma aula)
   }
 
   function carregarAulasBonus() {
@@ -2027,8 +2077,7 @@
       const primeiraPendente = aulasBonus.aulas.find(a => !aulaBonusConcluida(a.aula_id)) || aulasBonus.aulas[0];
       montarEstruturaAulas();
       // Se o aluno já saiu da aba enquanto carregava, não liga o player escondido.
-      if (document.getElementById('tab-aulas').classList.contains('active')) selecionarAula(primeiraPendente.aula_id, false);
-      else aulaBonusAtualId = primeiraPendente.aula_id;
+      selecionarAula(primeiraPendente.aula_id, false, false);
     })
     .catch(() => {
       mostrarAvisoAulas('Não conseguimos carregar as aulas agora. Confira sua internet e tente de novo.');
@@ -2050,7 +2099,7 @@
     document.getElementById('aulas-conteudo').innerHTML =
       '<div class="aulas-layout">' +
         '<div>' +
-          '<div class="aula-player" id="aula-player"></div>' +
+          htmlPlayerAulas() +
           '<div class="aula-ordem-atual" id="aula-ordem-atual"></div>' +
           '<h2 class="aula-titulo-atual" id="aula-titulo-atual"></h2>' +
           '<div class="aula-acoes">' +
@@ -2095,7 +2144,7 @@
       const concluida = aulaBonusConcluida(a.aula_id);
       const ativa = a.aula_id === atual.aula_id;
       return '<li><button class="aula-item' + (ativa ? ' ativa' : '') + (concluida ? ' concluida' : '') + '"' +
-        ' onclick="selecionarAula(\'' + escaparTextoEvolucao(a.aula_id) + '\', true)"' + (ativa ? ' aria-current="true"' : '') + '>' +
+        ' onclick="selecionarAula(\'' + escaparTextoEvolucao(a.aula_id) + '\', true, true)"' + (ativa ? ' aria-current="true"' : '') + '>' +
         '<span class="aula-num">' + (concluida ? '✓' : (i + 1)) + '</span>' +
         '<span class="aula-item-titulo">' + escaparTextoEvolucao(a.titulo) + '</span>' +
         (ativa ? '<span class="aula-item-status">▶ Assistindo</span>' : '') +
@@ -2103,33 +2152,350 @@
     }).join('');
   }
 
-  // Só um iframe por vez, criado quando o aluno escolhe a aula.
-  function montarPlayerAula(aula) {
-    const player = document.getElementById('aula-player');
-    if (!player) return;
-    const iframe = document.createElement('iframe');
-    iframe.src = 'https://drive.google.com/file/d/' + encodeURIComponent(aula.drive_file_id) + '/preview';
-    iframe.allow = 'autoplay; fullscreen';
-    iframe.allowFullscreen = true;
-    iframe.title = aula.titulo;
-    player.replaceChildren(iframe);
+  // ---------- Player próprio (YouTube por baixo, controles do app por cima) ----------
+  const ICONE_PLAY = '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v13.72a1 1 0 0 0 1.52.85l10.9-6.86a1 1 0 0 0 0-1.7L9.52 4.29A1 1 0 0 0 8 5.14z"/></svg>';
+  const ICONE_PAUSA = '<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
+  const ICONE_VOLTAR10 = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><text x="12" y="15.5" font-size="7" text-anchor="middle" fill="currentColor" stroke="none" font-weight="700">10</text></svg>';
+  const ICONE_AVANCAR10 = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/><text x="12" y="15.5" font-size="7" text-anchor="middle" fill="currentColor" stroke="none" font-weight="700">10</text></svg>';
+  const ICONE_TELA_CHEIA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+  const ICONE_SAIR_TELA_CHEIA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5"/></svg>';
+  const VELOCIDADES_PLAYER = [1, 1.25, 1.5, 2];
+
+  let ytApiPromessa = null;
+  let ytPlayer = null;
+  let ytPronto = false;
+  let ytAulaCarregadaId = "";
+  let ytTimerProgresso = null;
+  let ytTimerControles = null;
+  let ytArrastandoBarra = false;
+  let velocidadePlayerIdx = 0;
+  const posicaoPorAula = {}; // onde o aluno parou em cada aula (só nesta sessão)
+
+  function htmlPlayerAulas() {
+    return '<div class="aula-player estado-capa" id="aula-player">' +
+      '<div class="yt-alvo" id="yt-alvo"></div>' +
+      '<div class="player-toque" id="player-toque" onclick="toquePlayer(event)"></div>' +
+      '<div class="player-centro"><span class="player-play-grande">' + ICONE_PLAY + '</span></div>' +
+      '<div class="player-capa" onclick="tocarAulaAtual()">' +
+        '<span class="player-capa-num" id="player-capa-num"></span>' +
+        '<span class="player-capa-titulo" id="player-capa-titulo"></span>' +
+        '<button class="player-play-grande" aria-label="Assistir aula">' + ICONE_PLAY + '</button>' +
+      '</div>' +
+      '<div class="player-carregando"><div class="player-spinner"></div></div>' +
+      '<div class="player-fim">' +
+        '<strong>Fim da aula 🎉</strong>' +
+        '<div class="player-fim-acoes">' +
+          '<button class="principal" id="player-fim-concluir" onclick="marcarAulaConcluida()">Marcar como concluída</button>' +
+          '<button id="player-fim-proxima" onclick="irParaProximaAula()">Próxima aula →</button>' +
+          '<button onclick="assistirDeNovo()">↻ Assistir de novo</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="player-erro" id="player-erro"></div>' +
+      '<div class="player-controles" id="player-controles">' +
+        '<input type="range" class="player-progresso" id="player-progresso" min="0" max="1000" value="0" step="1" aria-label="Posição do vídeo" ' +
+          'oninput="arrastandoBarraPlayer(this)" onchange="soltarBarraPlayer(this)">' +
+        '<div class="player-linha">' +
+          '<button class="player-btn" id="player-btn-play" onclick="alternarPlayPause()" aria-label="Tocar ou pausar">' + ICONE_PLAY + '</button>' +
+          '<button class="player-btn" onclick="pularPlayer(-10)" aria-label="Voltar 10 segundos">' + ICONE_VOLTAR10 + '</button>' +
+          '<button class="player-btn" onclick="pularPlayer(10)" aria-label="Avançar 10 segundos">' + ICONE_AVANCAR10 + '</button>' +
+          '<span class="player-tempo" id="player-tempo">0:00 / 0:00</span>' +
+          '<span class="player-espaco"></span>' +
+          '<button class="player-btn vel" id="player-btn-vel" onclick="trocarVelocidadePlayer()" aria-label="Velocidade">1x</button>' +
+          '<button class="player-btn" id="player-btn-tela" onclick="alternarTelaCheiaPlayer()" aria-label="Tela cheia">' + ICONE_TELA_CHEIA + '</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
   }
 
-  function pausarPlayerAulas() {
+  function definirEstadoPlayer(estado) {
+    const el = document.getElementById('aula-player');
+    if (!el) return;
+    el.classList.remove('estado-capa', 'estado-carregando', 'estado-tocando', 'estado-pausado', 'estado-fim', 'estado-erro');
+    el.classList.add('estado-' + estado);
+    const btn = document.getElementById('player-btn-play');
+    if (btn) btn.innerHTML = estado === 'tocando' ? ICONE_PAUSA : ICONE_PLAY;
+    if (estado === 'tocando') agendarOcultarControles(); else el.classList.remove('controles-visiveis');
+    if (estado === 'pausado') atualizarProgressoPlayer();
+  }
+
+  function mostrarControlesPlayer(agendar) {
+    const el = document.getElementById('aula-player');
+    if (!el) return;
+    el.classList.add('controles-visiveis');
+    if (agendar) agendarOcultarControles();
+  }
+
+  function agendarOcultarControles() {
+    clearTimeout(ytTimerControles);
+    ytTimerControles = setTimeout(() => {
+      const el = document.getElementById('aula-player');
+      if (el && el.classList.contains('estado-tocando') && !ytArrastandoBarra) el.classList.remove('controles-visiveis');
+    }, 2800);
+  }
+
+  function carregarApiYoutube() {
+    if (window.YT && window.YT.Player) return Promise.resolve();
+    if (ytApiPromessa) return ytApiPromessa;
+    ytApiPromessa = new Promise((resolve, reject) => {
+      const anterior = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => { if (typeof anterior === 'function') anterior(); resolve(); };
+      const script = document.createElement('script');
+      script.src = 'https://www.youtube.com/iframe_api';
+      script.async = true;
+      script.onerror = () => { ytApiPromessa = null; script.remove(); reject(new Error('api do youtube indisponível')); };
+      document.head.appendChild(script);
+    });
+    return ytApiPromessa;
+  }
+
+  function aulaAtualBonus() {
+    return aulasBonus && aulasBonus.aulas.find(a => a.aula_id === aulaBonusAtualId);
+  }
+
+  // Capa da aula (antes do play): número + título, sem imagem nenhuma.
+  function mostrarCapaAula(aula) {
+    const indice = aulasBonus.aulas.indexOf(aula);
+    document.getElementById('player-capa-num').textContent = 'Aula ' + (indice + 1);
+    document.getElementById('player-capa-titulo').textContent = aula.titulo;
+    if (ytPlayer && ytPronto) { try { ytPlayer.pauseVideo(); } catch (e) {} }
+    pararTimerProgresso();
+    definirEstadoPlayer('capa');
+  }
+
+  function tocarAulaAtual() {
+    const aula = aulaAtualBonus();
+    if (!aula) return;
+    const inicio = Math.floor(posicaoPorAula[aula.aula_id] || 0);
+    if (ytPlayer && ytPronto) {
+      if (ytAulaCarregadaId === aula.aula_id) ytPlayer.playVideo();
+      else { ytPlayer.loadVideoById({ videoId: aula.youtube_id, startSeconds: inicio }); ytAulaCarregadaId = aula.aula_id; }
+      aplicarVelocidadePlayer();
+      definirEstadoPlayer('carregando');
+      return;
+    }
+    definirEstadoPlayer('carregando');
+    carregarApiYoutube().then(() => {
+      if (!document.getElementById('yt-alvo') || aulaBonusAtualId !== aula.aula_id) return;
+      ytPronto = false;
+      ytAulaCarregadaId = aula.aula_id;
+      ytPlayer = new YT.Player('yt-alvo', {
+        host: 'https://www.youtube-nocookie.com',
+        videoId: aula.youtube_id,
+        playerVars: { autoplay: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, playsinline: 1, iv_load_policy: 3, modestbranding: 1, cc_load_policy: 0, start: inicio, origin: location.origin },
+        events: {
+          onReady: (ev) => { ytPronto = true; aplicarVelocidadePlayer(); ev.target.playVideo(); setTimeout(() => { if (ytPlayer && ytPronto && ytPlayer.getPlayerState() !== 1) definirEstadoPlayer('pausado'); }, 2500); },
+          onStateChange: aoMudarEstadoYoutube,
+          onError: aoErroYoutube
+        }
+      });
+    }).catch(() => mostrarErroPlayer('Não conseguimos carregar o player agora. Confira sua internet e toque para tentar de novo.'));
+  }
+
+  function aoMudarEstadoYoutube(ev) {
+    const estado = ev.data;
+    if (estado === 1) { definirEstadoPlayer('tocando'); iniciarTimerProgresso(); }
+    else if (estado === 2) { definirEstadoPlayer('pausado'); pararTimerProgresso(); atualizarProgressoPlayer(); }
+    else if (estado === 0) { pararTimerProgresso(); posicaoPorAula[ytAulaCarregadaId] = 0; atualizarFimPlayer(); definirEstadoPlayer('fim'); }
+    else if (estado === 3) { const el = document.getElementById('aula-player'); if (el && !el.classList.contains('estado-tocando')) definirEstadoPlayer('carregando'); }
+  }
+
+  function aoErroYoutube(ev) {
+    const indisponivel = [100, 101, 150].indexOf(ev.data) !== -1;
+    mostrarErroPlayer(indisponivel ? 'Este vídeo está indisponível no momento. Avise o suporte, por favor.' : 'Não conseguimos tocar este vídeo agora. Toque para tentar de novo.');
+  }
+
+  function mostrarErroPlayer(texto) {
+    const erro = document.getElementById('player-erro');
+    if (!erro) return;
+    erro.textContent = texto;
+    erro.onclick = () => { if (ytPlayer) { try { ytPlayer.destroy(); } catch (e) {} } ytPlayer = null; ytPronto = false; ytAulaCarregadaId = ""; recriarAlvoYoutube(); tocarAulaAtual(); };
+    pararTimerProgresso();
+    definirEstadoPlayer('erro');
+  }
+
+  function recriarAlvoYoutube() {
     const player = document.getElementById('aula-player');
-    if (player) player.replaceChildren();
+    if (!player) return;
+    const antigo = player.querySelector('iframe, #yt-alvo');
+    const alvo = document.createElement('div');
+    alvo.className = 'yt-alvo';
+    alvo.id = 'yt-alvo';
+    if (antigo) antigo.replaceWith(alvo); else player.prepend(alvo);
+  }
+
+  function atualizarFimPlayer() {
+    const feita = aulaBonusConcluida(aulaBonusAtualId);
+    const btnConcluir = document.getElementById('player-fim-concluir');
+    if (btnConcluir) { btnConcluir.textContent = feita ? '✓ Aula concluída' : 'Marcar como concluída'; btnConcluir.disabled = feita; }
+    const indice = aulasBonus ? aulasBonus.aulas.findIndex(a => a.aula_id === aulaBonusAtualId) : -1;
+    const btnProxima = document.getElementById('player-fim-proxima');
+    if (btnProxima) btnProxima.style.display = aulasBonus && aulasBonus.aulas[indice + 1] ? '' : 'none';
+  }
+
+  function assistirDeNovo() {
+    if (!ytPlayer || !ytPronto) return;
+    ytPlayer.seekTo(0, true);
+    ytPlayer.playVideo();
+  }
+
+  function iniciarTimerProgresso() {
+    pararTimerProgresso();
+    ytTimerProgresso = setInterval(atualizarProgressoPlayer, 500);
+  }
+
+  function pararTimerProgresso() {
+    clearInterval(ytTimerProgresso);
+    ytTimerProgresso = null;
+  }
+
+  function formatarTempoPlayer(seg) {
+    seg = Math.max(0, Math.floor(seg || 0));
+    const h = Math.floor(seg / 3600), m = Math.floor((seg % 3600) / 60), s = seg % 60;
+    return (h ? h + ':' + String(m).padStart(2, '0') : m) + ':' + String(s).padStart(2, '0');
+  }
+
+  function atualizarProgressoPlayer() {
+    if (!ytPlayer || !ytPronto || ytArrastandoBarra) return;
+    const atual = ytPlayer.getCurrentTime() || 0;
+    const total = ytPlayer.getDuration() || 0;
+    if (ytAulaCarregadaId) posicaoPorAula[ytAulaCarregadaId] = atual;
+    const barra = document.getElementById('player-progresso');
+    if (barra && total) { barra.value = Math.round((atual / total) * 1000); barra.style.setProperty('--pct', (atual / total) * 100 + '%'); }
+    const tempo = document.getElementById('player-tempo');
+    if (tempo) tempo.textContent = formatarTempoPlayer(atual) + ' / ' + formatarTempoPlayer(total);
+  }
+
+  function arrastandoBarraPlayer(barra) {
+    ytArrastandoBarra = true;
+    mostrarControlesPlayer(false);
+    barra.style.setProperty('--pct', barra.value / 10 + '%');
+    const total = ytPlayer && ytPronto ? ytPlayer.getDuration() : 0;
+    const tempo = document.getElementById('player-tempo');
+    if (tempo && total) tempo.textContent = formatarTempoPlayer(total * barra.value / 1000) + ' / ' + formatarTempoPlayer(total);
+  }
+
+  function soltarBarraPlayer(barra) {
+    ytArrastandoBarra = false;
+    if (ytPlayer && ytPronto) ytPlayer.seekTo((ytPlayer.getDuration() || 0) * barra.value / 1000, true);
+    agendarOcultarControles();
+  }
+
+  function alternarPlayPause() {
+    if (!ytPlayer || !ytPronto) { tocarAulaAtual(); return; }
+    if (ytPlayer.getPlayerState() === 1) ytPlayer.pauseVideo(); else ytPlayer.playVideo();
+  }
+
+  function pularPlayer(segundos) {
+    if (!ytPlayer || !ytPronto) return;
+    const total = ytPlayer.getDuration() || 0;
+    ytPlayer.seekTo(Math.min(Math.max(0, ytPlayer.getCurrentTime() + segundos), Math.max(0, total - 1)), true);
+    mostrarControlesPlayer(true);
+    setTimeout(atualizarProgressoPlayer, 150);
+  }
+
+  function aplicarVelocidadePlayer() {
+    const vel = VELOCIDADES_PLAYER[velocidadePlayerIdx];
+    if (ytPlayer && ytPronto) { try { ytPlayer.setPlaybackRate(vel); } catch (e) {} }
+    const btn = document.getElementById('player-btn-vel');
+    if (btn) btn.textContent = String(vel).replace('.', ',') + 'x';
+  }
+
+  function trocarVelocidadePlayer() {
+    velocidadePlayerIdx = (velocidadePlayerIdx + 1) % VELOCIDADES_PLAYER.length;
+    aplicarVelocidadePlayer();
+    mostrarControlesPlayer(true);
+  }
+
+  // Toque no vídeo: no computador pausa/toca; no celular o 1º toque mostra os controles e o 2º pausa/toca.
+  function toquePlayer() {
+    const el = document.getElementById('aula-player');
+    if (!el) return;
+    const toqueSemMouse = window.matchMedia && window.matchMedia('(hover: none)').matches;
+    if (toqueSemMouse && el.classList.contains('estado-tocando') && !el.classList.contains('controles-visiveis')) {
+      mostrarControlesPlayer(true);
+      return;
+    }
+    alternarPlayPause();
+  }
+
+  function telaCheiaNativaAtiva() {
+    return !!(document.fullscreenElement || document.webkitFullscreenElement);
+  }
+
+  function alternarTelaCheiaPlayer() {
+    const el = document.getElementById('aula-player');
+    if (!el) return;
+    if (telaCheiaNativaAtiva()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+    if (el.classList.contains('tela-cheia-simulada')) { sairTelaCheiaSimulada(); return; }
+    const pedir = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (pedir && (document.fullscreenEnabled || document.webkitFullscreenEnabled)) {
+      Promise.resolve(pedir.call(el)).then(() => {
+        if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
+      }).catch(() => entrarTelaCheiaSimulada(el));
+    } else {
+      entrarTelaCheiaSimulada(el);
+    }
+  }
+
+  function entrarTelaCheiaSimulada(el) {
+    el.classList.add('tela-cheia-simulada');
+    document.body.classList.add('player-tela-cheia-aberta');
+    atualizarIconeTelaCheia();
+  }
+
+  function sairTelaCheiaSimulada() {
+    const el = document.getElementById('aula-player');
+    if (el) el.classList.remove('tela-cheia-simulada');
+    document.body.classList.remove('player-tela-cheia-aberta');
+    atualizarIconeTelaCheia();
+  }
+
+  function atualizarIconeTelaCheia() {
+    const el = document.getElementById('aula-player');
+    const btn = document.getElementById('player-btn-tela');
+    if (!el || !btn) return;
+    btn.innerHTML = (telaCheiaNativaAtiva() || el.classList.contains('tela-cheia-simulada')) ? ICONE_SAIR_TELA_CHEIA : ICONE_TELA_CHEIA;
+  }
+
+  document.addEventListener('fullscreenchange', atualizarIconeTelaCheia);
+  document.addEventListener('webkitfullscreenchange', atualizarIconeTelaCheia);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { const el = document.getElementById('aula-player'); if (el && el.classList.contains('tela-cheia-simulada')) sairTelaCheiaSimulada(); }
+  });
+  document.addEventListener('mousemove', (e) => {
+    const el = document.getElementById('aula-player');
+    if (el && el.classList.contains('estado-tocando') && el.contains(e.target)) mostrarControlesPlayer(true);
+  });
+
+  // Sai da aba: pausa (o player continua montado e volta pausado no mesmo ponto).
+  function pausarPlayerAulas() {
+    if (telaCheiaNativaAtiva()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    sairTelaCheiaSimulada();
+    if (ytPlayer && ytPronto) { try { ytPlayer.pauseVideo(); } catch (e) {} }
+  }
+
+  function destruirPlayerAulas() {
+    pararTimerProgresso();
+    clearTimeout(ytTimerControles);
+    sairTelaCheiaSimulada();
+    if (ytPlayer) { try { ytPlayer.destroy(); } catch (e) {} }
+    ytPlayer = null;
+    ytPronto = false;
+    ytAulaCarregadaId = "";
+    Object.keys(posicaoPorAula).forEach(k => delete posicaoPorAula[k]);
   }
 
   function assistindoAulaBonus() {
     const aba = document.getElementById('tab-aulas');
-    return !!(aba && aba.classList.contains('active') && document.querySelector('#aula-player iframe') && !document.hidden);
+    return !!(aba && aba.classList.contains('active') && ytPlayer && ytPronto && ytPlayer.getPlayerState() === 1 && !document.hidden);
   }
 
-  function selecionarAula(aulaId, rolarAtePlayer) {
+  // tocar: com o player já criado, a troca de aula já começa tocando (o toque do aluno libera o autoplay).
+  function selecionarAula(aulaId, rolarAtePlayer, tocar) {
     if (!aulasBonus) return;
     const aula = aulasBonus.aulas.find(a => a.aula_id === aulaId) || aulasBonus.aulas[0];
     aulaBonusAtualId = aula.aula_id;
-    montarPlayerAula(aula);
+    if (tocar && ytPlayer && ytPronto) tocarAulaAtual(); else mostrarCapaAula(aula);
     atualizarPainelAulas();
     document.getElementById('aula-msg').textContent = '';
     if (rolarAtePlayer && window.innerWidth < 1100) {
@@ -2146,7 +2512,7 @@
     if (!aulasBonus) return;
     const indice = aulasBonus.aulas.findIndex(a => a.aula_id === aulaBonusAtualId);
     const proxima = aulasBonus.aulas[indice + 1];
-    if (proxima) selecionarAula(proxima.aula_id, true);
+    if (proxima) selecionarAula(proxima.aula_id, true, true);
   }
 
   function registrarProgressoAula(aulaId, evento) {
@@ -2167,16 +2533,19 @@
     const anterior = aulasBonus.progresso[aulaId];
     aulasBonus.progresso[aulaId] = { concluida: true };
     atualizarPainelAulas();
+    atualizarFimPlayer();
     registrarProgressoAula(aulaId, 'concluida').catch(() => {
       if (!aulasBonus) return;
       if (anterior) aulasBonus.progresso[aulaId] = anterior; else delete aulasBonus.progresso[aulaId];
       atualizarPainelAulas();
+      atualizarFimPlayer();
       const msg = document.getElementById('aula-msg');
       if (msg && aulaBonusAtualId === aulaId) msg.textContent = 'Não foi possível salvar agora. Tente marcar de novo em instantes.';
     });
   }
 
   function limparAulasBonus() {
+    destruirPlayerAulas();
     aulasBonus = null;
     aulaBonusAtualId = "";
     const container = document.getElementById('aulas-conteudo');
