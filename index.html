@@ -336,8 +336,16 @@
     @media (min-width: 1100px) { .aulas-layout { grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); align-items: start; } }
     /* Player próprio: o YouTube toca por baixo, sem os controles dele; por cima ficam a camada de toque
        (nada do YouTube é clicável, nem em tela cheia) e os nossos controles. */
-    .aula-player { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 12px; overflow: hidden; border: 1px solid var(--border-color); user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
-    .aula-player iframe, .aula-player .yt-alvo { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+    .aula-player { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border-radius: 12px; overflow: hidden; overflow: clip; border: 1px solid var(--border-color); user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+    /* O player do YouTube fica 90px maior em cima e embaixo: o vídeo continua do mesmo tamanho (ele se ajusta
+       pela largura), e as faixas onde o YouTube põe título e logo ficam fora da moldura (overflow: hidden). */
+    .aula-player iframe, .aula-player .yt-alvo { position: absolute; left: 0; top: -90px; width: 100%; height: calc(100% + 180px); border: 0; }
+    .aula-player:fullscreen iframe, .aula-player:fullscreen .yt-alvo,
+    .aula-player.tela-cheia-simulada iframe, .aula-player.tela-cheia-simulada .yt-alvo {
+      --largura-video: min(100vw, calc(100vh * 16 / 9));
+      width: var(--largura-video); height: calc(var(--largura-video) * 9 / 16 + 180px);
+      left: calc((100vw - var(--largura-video)) / 2); top: calc((100vh - var(--largura-video) * 9 / 16) / 2 - 90px);
+    }
     .player-toque { position: absolute; inset: 0; z-index: 2; cursor: pointer; }
     .player-capa, .player-fim, .player-erro, .player-carregando { position: absolute; inset: 0; z-index: 4; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 16px; text-align: center; color: #fff; }
     .player-capa { background: radial-gradient(circle at 50% 40%, #1e293b 0%, #0b1120 75%); cursor: pointer; }
@@ -354,7 +362,7 @@
     .player-fim-acoes button.principal { background: var(--accent-orange); border-color: var(--accent-orange); }
     .player-fim-acoes button:disabled { opacity: 0.6; cursor: default; }
     .player-erro { background: #0b1120; font-size: 0.9rem; color: #cbd5e1; }
-    .player-carregando { pointer-events: none; }
+    .player-carregando { pointer-events: none; background: #000; }
     .player-spinner { width: 42px; height: 42px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, 0.25); border-top-color: var(--accent-orange); animation: player-girar 0.8s linear infinite; }
     @keyframes player-girar { to { transform: rotate(360deg); } }
     .player-controles { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; padding: 18px 10px 6px; background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent); color: #fff; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
@@ -375,6 +383,8 @@
     .aula-player.estado-erro .player-erro,
     .aula-player.estado-carregando .player-carregando,
     .aula-player.estado-pausado .player-centro { display: flex; }
+    /* Vídeo carregado mas ainda não começou (o navegador pediu mais um toque): esconde a tela inicial do YouTube. */
+    .aula-player.estado-pausado.nao-iniciado .player-centro { background: #000; }
     .aula-player.estado-pausado .player-controles,
     .aula-player.estado-tocando.controles-visiveis .player-controles { opacity: 1; pointer-events: auto; }
     .aula-player.estado-tocando:not(.controles-visiveis) { cursor: none; }
@@ -977,8 +987,12 @@
 
   // ==================== NOVIDADES DA VERSÃO (CHANGELOG) ====================
   // Para anunciar uma novidade nova: atualize APP_VERSION e adicione uma entrada no topo do CHANGELOG.
-  const APP_VERSION = "2026.10.15";
+  const APP_VERSION = "2026.10.15.2";
   const CHANGELOG = [
+    { versao: "2026.10.15.2", titulo: "Aulas concluídas automaticamente", itens: [
+      "Assistiu 70% da aula? Ela já fica marcada como concluída",
+      "O botão \"Marcar como concluída\" continua disponível quando você quiser"
+    ]},
     { versao: "2026.10.15", titulo: "Player novo nas aulas Primeiros Passos", itens: [
       "Vídeos mais leves e estáveis no celular, assistindo direto no app",
       "Escolha a velocidade (1,25x, 1,5x ou 2x) e volte ou avance 10 segundos",
@@ -2114,6 +2128,10 @@
           '<ol class="aulas-lista" id="aulas-lista"></ol>' +
         '</div>' +
       '</div>';
+    // O iframe é maior que a moldura (para esconder título e logo do YouTube); a moldura nunca pode rolar,
+    // senão o corte desalinha. overflow: clip já impede; isto cobre navegadores antigos.
+    const player = document.getElementById('aula-player');
+    player.addEventListener('scroll', () => { if (player.scrollTop || player.scrollLeft) { player.scrollTop = 0; player.scrollLeft = 0; } });
   }
 
   function atualizarPainelAulas() {
@@ -2170,6 +2188,12 @@
   let ytArrastandoBarra = false;
   let velocidadePlayerIdx = 0;
   const posicaoPorAula = {}; // onde o aluno parou em cada aula (só nesta sessão)
+  // Conclusão automática: conta os segundos realmente assistidos (cada trecho uma vez só; pulo pela
+  // barra não conta). Fica só em memória, então vale dentro da mesma sessão do app.
+  const PERCENTUAL_CONCLUSAO_AUTOMATICA = 0.7;
+  const segundosVistosPorAula = {};
+  const ultimoSegundoPorAula = {};
+  const autoConclusaoTentadaEm = {};
 
   function htmlPlayerAulas() {
     return '<div class="aula-player estado-capa" id="aula-player">' +
@@ -2283,7 +2307,7 @@
         videoId: aula.youtube_id,
         playerVars: { autoplay: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, playsinline: 1, iv_load_policy: 3, modestbranding: 1, cc_load_policy: 0, start: inicio, origin: location.origin },
         events: {
-          onReady: (ev) => { ytPronto = true; aplicarVelocidadePlayer(); ev.target.playVideo(); setTimeout(() => { if (ytPlayer && ytPronto && ytPlayer.getPlayerState() !== 1) definirEstadoPlayer('pausado'); }, 2500); },
+          onReady: (ev) => { ytPronto = true; aplicarVelocidadePlayer(); ev.target.playVideo(); setTimeout(() => { if (ytPlayer && ytPronto && [1, 2, 0].indexOf(ytPlayer.getPlayerState()) === -1) { definirEstadoPlayer('pausado'); document.getElementById('aula-player').classList.add('nao-iniciado'); } }, 2500); },
           onStateChange: aoMudarEstadoYoutube,
           onError: aoErroYoutube
         }
@@ -2293,7 +2317,7 @@
 
   function aoMudarEstadoYoutube(ev) {
     const estado = ev.data;
-    if (estado === 1) { definirEstadoPlayer('tocando'); iniciarTimerProgresso(); }
+    if (estado === 1) { const el = document.getElementById('aula-player'); if (el) el.classList.remove('nao-iniciado'); definirEstadoPlayer('tocando'); iniciarTimerProgresso(); }
     else if (estado === 2) { definirEstadoPlayer('pausado'); pararTimerProgresso(); atualizarProgressoPlayer(); }
     else if (estado === 0) { pararTimerProgresso(); posicaoPorAula[ytAulaCarregadaId] = 0; atualizarFimPlayer(); definirEstadoPlayer('fim'); }
     else if (estado === 3) { const el = document.getElementById('aula-player'); if (el && !el.classList.contains('estado-tocando')) definirEstadoPlayer('carregando'); }
@@ -2358,11 +2382,32 @@
     if (!ytPlayer || !ytPronto || ytArrastandoBarra) return;
     const atual = ytPlayer.getCurrentTime() || 0;
     const total = ytPlayer.getDuration() || 0;
-    if (ytAulaCarregadaId) posicaoPorAula[ytAulaCarregadaId] = atual;
+    if (ytAulaCarregadaId) {
+      posicaoPorAula[ytAulaCarregadaId] = atual;
+      if (ytPlayer.getPlayerState() === 1) registrarTrechoAssistido(ytAulaCarregadaId, atual, total);
+    }
     const barra = document.getElementById('player-progresso');
     if (barra && total) { barra.value = Math.round((atual / total) * 1000); barra.style.setProperty('--pct', (atual / total) * 100 + '%'); }
     const tempo = document.getElementById('player-tempo');
     if (tempo) tempo.textContent = formatarTempoPlayer(atual) + ' / ' + formatarTempoPlayer(total);
+  }
+
+  function registrarTrechoAssistido(aulaId, atual, total) {
+    const vistos = segundosVistosPorAula[aulaId] || (segundosVistosPorAula[aulaId] = new Set());
+    const seg = Math.floor(atual);
+    const anterior = ultimoSegundoPorAula[aulaId];
+    // Entre duas leituras (a cada 0,5s) o vídeo anda no máximo ~1s, mesmo em 2x: até 3s é avanço normal.
+    if (anterior !== undefined && seg > anterior && seg - anterior <= 3) { for (let s = anterior + 1; s <= seg; s++) vistos.add(s); }
+    else vistos.add(seg);
+    ultimoSegundoPorAula[aulaId] = seg;
+
+    if (total > 0 && aulaId === aulaBonusAtualId && !aulaBonusConcluida(aulaId) && vistos.size >= Math.floor(total) * PERCENTUAL_CONCLUSAO_AUTOMATICA) {
+      // Se o salvamento falhar, tenta de novo só depois de 30s (sem disparar a cada leitura).
+      if (Date.now() - (autoConclusaoTentadaEm[aulaId] || 0) > 30000) {
+        autoConclusaoTentadaEm[aulaId] = Date.now();
+        marcarAulaConcluida();
+      }
+    }
   }
 
   function arrastandoBarraPlayer(barra) {
@@ -2482,7 +2527,7 @@
     ytPlayer = null;
     ytPronto = false;
     ytAulaCarregadaId = "";
-    Object.keys(posicaoPorAula).forEach(k => delete posicaoPorAula[k]);
+    [posicaoPorAula, segundosVistosPorAula, ultimoSegundoPorAula, autoConclusaoTentadaEm].forEach(m => Object.keys(m).forEach(k => delete m[k]));
   }
 
   function assistindoAulaBonus() {
