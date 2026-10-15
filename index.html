@@ -356,6 +356,17 @@
     .player-play-grande svg { width: 28px; height: 28px; margin-left: 3px; }
     .player-centro { position: absolute; inset: 0; z-index: 3; display: none; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.45); pointer-events: none; }
     .player-fim { background: #0b1120; }
+    .player-fim-padrao, .player-fim-oferta { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+    .player-fim-oferta { display: none; max-width: 440px; }
+    .player-fim.com-oferta .player-fim-padrao { display: none; }
+    .player-fim.com-oferta .player-fim-oferta { display: flex; }
+    .player-fim-linha { display: flex; gap: 8px; width: 100%; }
+    .player-fim-linha .oferta, .player-fim-linha .btn-fim-proxima { flex: 1 1 0; min-width: 0; }
+    .player-fim-linha .oferta-botao { height: 100%; padding: 10px 12px; font-size: 0.9rem; white-space: nowrap; }
+    .player-fim-linha .oferta.aberta + button { display: none; }
+    .player-fim .oferta-voltar { color: #cbd5e1; }
+    .player-fim-oferta.oferta-aberta > strong { display: none; }
+    .btn-fim-proxima { flex-shrink: 0; padding: 10px 14px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(255, 255, 255, 0.08); color: #fff; font-family: inherit; font-weight: 700; font-size: 0.82rem; cursor: pointer; white-space: nowrap; font-variant-numeric: tabular-nums; }
     .player-fim strong { font-size: 1.05rem; }
     .player-fim-acoes { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
     .player-fim-acoes button { padding: 10px 14px; border-radius: 8px; font-family: inherit; font-weight: 700; font-size: 0.82rem; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.25); background: rgba(255, 255, 255, 0.08); color: #fff; }
@@ -363,8 +374,9 @@
     .player-fim-acoes button:disabled { opacity: 0.6; cursor: default; }
     .player-erro { background: #0b1120; font-size: 0.9rem; color: #cbd5e1; }
     .player-carregando { pointer-events: none; background: #000; }
-    .player-spinner { width: 42px; height: 42px; border-radius: 50%; border: 3px solid rgba(255, 255, 255, 0.25); border-top-color: var(--accent-orange); animation: player-girar 0.8s linear infinite; }
-    @keyframes player-girar { to { transform: rotate(360deg); } }
+    .player-carregando .loading-radar { width: clamp(48px, 16%, 76px); height: auto; aspect-ratio: 1; }
+    .player-carregando p { margin: 0; font-size: 0.85rem; font-weight: 700; color: #fff; }
+    .player-carregando p:empty { display: none; }
     .player-controles { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; padding: 18px 10px 6px; background: linear-gradient(to top, rgba(0, 0, 0, 0.8), transparent); color: #fff; opacity: 0; pointer-events: none; transition: opacity 0.25s; }
     .player-linha { display: flex; align-items: center; gap: 2px; }
     .player-btn { background: none; border: none; color: #fff; width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; cursor: pointer; font-family: inherit; font-size: 0.78rem; font-weight: 700; flex-shrink: 0; }
@@ -416,6 +428,21 @@
     .aula-item.concluida .aula-num { background: var(--accent-orange); color: #fff; border-color: var(--accent-orange); }
     .aula-item-titulo { flex: 1; line-height: 1.35; }
     .aula-item-status { font-size: 0.72rem; font-weight: 700; color: var(--accent-orange); white-space: nowrap; }
+    .aulas-carregando { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; min-height: 260px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; }
+    .aulas-carregando p { margin: 0; font-size: 0.9rem; font-weight: 700; color: var(--text-main); }
+    /* Oferta de uma aula (ex.: VMN na aula 5): um botão só; ao tocar, vira as opções de pagamento. */
+    #aula-oferta:not(:empty) { margin-top: 14px; }
+    .oferta { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+    .oferta-botao { width: 100%; padding: 13px 16px; border: none; border-radius: 8px; background: linear-gradient(135deg, var(--accent-orange), #ea580c); color: #fff; font-family: inherit; font-weight: 800; font-size: 0.95rem; cursor: pointer; box-shadow: 0 4px 14px rgba(249, 115, 22, 0.25); }
+    .oferta-opcoes { display: none; gap: 8px; }
+    .oferta-opcao { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; gap: 3px; padding: 10px 8px; border-radius: 8px; border: 1px solid var(--accent-orange); background: transparent; color: var(--accent-orange); text-align: center; text-decoration: none; }
+    .oferta-opcao.principal { background: var(--accent-orange); color: #fff; }
+    .oferta-opcao strong { font-size: 0.95rem; white-space: nowrap; }
+    .oferta-opcao small { display: block; font-size: 0.72rem; line-height: 1.3; opacity: 0.9; }
+    .oferta-voltar { display: none; align-self: center; background: none; border: none; padding: 2px 6px; color: var(--text-muted); font-family: inherit; font-size: 0.8rem; text-decoration: underline; cursor: pointer; }
+    .oferta.aberta .oferta-botao { display: none; }
+    .oferta.aberta .oferta-opcoes { display: flex; }
+    .oferta.aberta .oferta-voltar { display: inline; }
     .aulas-aviso { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
     .aulas-aviso .aula-acoes { margin-top: 0; width: 100%; max-width: 260px; }
 
@@ -1592,6 +1619,8 @@
 
     reiniciarTemporizadorInatividade();
     inicializarApp();
+    // Busca as aulas em segundo plano depois que os dados principais do app já saíram.
+    setTimeout(preCarregarAulasBonus, 2500);
   }
 
   function exibirModalNovidades() {
@@ -2056,25 +2085,52 @@
   // "Concluída" é marcada pelo botão do aluno.
   let aulasBonus = null; // { aulas: [{ aula_id, ordem, titulo, youtube_id }], progresso: { aula_id: { concluida } } }
   let aulaBonusAtualId = "";
-  let carregandoAulasBonus = false;
+  let promessaAulasBonus = null;
 
   function aulaBonusConcluida(aulaId) {
     return !!(aulasBonus && aulasBonus.progresso[aulaId] && aulasBonus.progresso[aulaId].concluida);
   }
 
+  // A lista é buscada em segundo plano logo depois do login (preCarregarAulasBonus), então ao tocar em
+  // Primeiros Passos ela normalmente já está pronta. Se não estiver, o radar aparece e a mesma busca é aproveitada.
   function abrirPrimeirosPassos() {
-    if (!aulasBonus) { carregarAulasBonus(); return; }
-    if (!document.getElementById('aula-player')) { montarEstruturaAulas(); selecionarAula(aulaBonusAtualId, false, false); return; }
-    atualizarPainelAulas(); // volta à aba: o player fica como estava (pausado na mesma aula)
+    carregarApiYoutube().catch(() => {}); // adianta o script do player para o primeiro play
+    if (aulasBonus) {
+      if (!document.getElementById('aula-player')) { montarEstruturaAulas(); selecionarAula(aulaBonusAtualId, false, false); return; }
+      atualizarPainelAulas(); // volta à aba: o player fica como estava (pausado na mesma aula)
+      return;
+    }
+    mostrarCarregandoAulas();
+    buscarAulasBonus().then(qtd => {
+      if (!abaAulasAtiva()) return; // monta quando o aluno voltar à aba
+      if (!qtd) { mostrarAvisoAulas('As aulas estão sendo preparadas. Volte daqui a pouco!'); return; }
+      montarEstruturaAulas();
+      selecionarAula(aulaBonusAtualId, false, false);
+    }).catch(() => {
+      if (abaAulasAtiva()) mostrarAvisoAulas('Não conseguimos carregar as aulas agora. Confira sua internet e tente de novo.');
+    });
   }
 
-  function carregarAulasBonus() {
-    if (carregandoAulasBonus) return;
-    carregandoAulasBonus = true;
-    const container = document.getElementById('aulas-conteudo');
-    container.innerHTML = '<div class="evolucao-card"><p class="evolucao-nota" style="margin:0;">Carregando as aulas...</p></div>';
+  function abaAulasAtiva() {
+    const aba = document.getElementById('tab-aulas');
+    return !!(aba && aba.classList.contains('active'));
+  }
 
-    fetchComRetry(API_NUVEM_URL, {
+  function mostrarCarregandoAulas() {
+    document.getElementById('aulas-conteudo').innerHTML =
+      '<div class="aulas-carregando" role="status">' +
+        '<div class="loading-radar"><img src="icon-512.png" alt="" aria-hidden="true"><span class="loading-radar-sweep"></span></div>' +
+        '<p>Carregando as aulas</p>' +
+      '</div>';
+  }
+
+  // Uma busca por vez: o pré-carregamento e o toque no botão compartilham a mesma promessa.
+  // Devolve a quantidade de aulas. Se a sessão mudar no meio (logout), o resultado é descartado.
+  function buscarAulasBonus() {
+    if (aulasBonus) return Promise.resolve(aulasBonus.aulas.length);
+    if (promessaAulasBonus) return promessaAulasBonus;
+    const tokenDaBusca = usuarioToken;
+    const promessa = fetchComRetry(API_NUVEM_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action: "listar_aulas", email: usuarioEmail, token: usuarioToken, origemHost: ORIGEM_HOST }),
@@ -2082,28 +2138,27 @@
     })
     .then(data => {
       if (!data || data.status !== 'success' || !Array.isArray(data.aulas)) throw new Error('lista indisponível');
-      if (!usuarioToken) return; // saiu do app enquanto carregava
-      if (data.aulas.length === 0) {
-        mostrarAvisoAulas('As aulas estão sendo preparadas. Volte daqui a pouco!');
-        return;
+      if (!usuarioToken || usuarioToken !== tokenDaBusca) throw new Error('sessão mudou');
+      if (data.aulas.length) {
+        aulasBonus = { aulas: data.aulas, progresso: data.progresso || {} };
+        aulaBonusAtualId = (aulasBonus.aulas.find(a => !aulaBonusConcluida(a.aula_id)) || aulasBonus.aulas[0]).aula_id;
       }
-      aulasBonus = { aulas: data.aulas, progresso: data.progresso || {} };
-      const primeiraPendente = aulasBonus.aulas.find(a => !aulaBonusConcluida(a.aula_id)) || aulasBonus.aulas[0];
-      montarEstruturaAulas();
-      // Se o aluno já saiu da aba enquanto carregava, não liga o player escondido.
-      selecionarAula(primeiraPendente.aula_id, false, false);
+      return data.aulas.length;
     })
-    .catch(() => {
-      mostrarAvisoAulas('Não conseguimos carregar as aulas agora. Confira sua internet e tente de novo.');
-    })
-    .finally(() => { carregandoAulasBonus = false; });
+    .finally(() => { if (promessaAulasBonus === promessa) promessaAulasBonus = null; });
+    promessaAulasBonus = promessa;
+    return promessa;
+  }
+
+  function preCarregarAulasBonus() {
+    if (usuarioToken && !aulasBonus) buscarAulasBonus().catch(() => {});
   }
 
   function mostrarAvisoAulas(texto) {
     document.getElementById('aulas-conteudo').innerHTML =
       '<div class="evolucao-card aulas-aviso">' +
         '<p class="evolucao-nota" style="margin:0;">' + escaparTextoEvolucao(texto) + '</p>' +
-        '<div class="aula-acoes"><button class="btn-aula-proxima" onclick="carregarAulasBonus()">↻ Tentar de novo</button></div>' +
+        '<div class="aula-acoes"><button class="btn-aula-proxima" onclick="abrirPrimeirosPassos()">↻ Tentar de novo</button></div>' +
       '</div>';
   }
 
@@ -2116,6 +2171,7 @@
           htmlPlayerAulas() +
           '<div class="aula-ordem-atual" id="aula-ordem-atual"></div>' +
           '<h2 class="aula-titulo-atual" id="aula-titulo-atual"></h2>' +
+          '<div id="aula-oferta"></div>' +
           '<div class="aula-acoes">' +
             '<button class="btn-aula-concluir" id="btn-aula-concluir" onclick="marcarAulaConcluida()"></button>' +
             '<button class="btn-aula-proxima" id="btn-aula-proxima" onclick="irParaProximaAula()"></button>' +
@@ -2145,6 +2201,11 @@
 
     document.getElementById('aula-ordem-atual').textContent = 'Aula ' + (indice + 1) + ' de ' + aulas.length;
     document.getElementById('aula-titulo-atual').textContent = atual.titulo;
+    const slotOferta = document.getElementById('aula-oferta');
+    if (slotOferta.dataset.aula !== atual.aula_id) {
+      slotOferta.dataset.aula = atual.aula_id;
+      slotOferta.innerHTML = atual.oferta ? htmlOfertaAula(atual) : '';
+    }
 
     const btnConcluir = document.getElementById('btn-aula-concluir');
     btnConcluir.textContent = feita ? '✓ Aula concluída' : 'Marcar como concluída';
@@ -2205,14 +2266,20 @@
         '<span class="player-capa-titulo" id="player-capa-titulo"></span>' +
         '<button class="player-play-grande" aria-label="Assistir aula">' + ICONE_PLAY + '</button>' +
       '</div>' +
-      '<div class="player-carregando"><div class="player-spinner"></div></div>' +
-      '<div class="player-fim">' +
-        '<strong>Fim da aula 🎉</strong>' +
-        '<div class="player-fim-acoes">' +
-          '<button class="principal" id="player-fim-concluir" onclick="marcarAulaConcluida()">Marcar como concluída</button>' +
-          '<button id="player-fim-proxima" onclick="irParaProximaAula()">Próxima aula →</button>' +
-          '<button onclick="assistirDeNovo()">↻ Assistir de novo</button>' +
+      '<div class="player-carregando">' +
+        '<div class="loading-radar"><img src="icon-512.png" alt="" aria-hidden="true"><span class="loading-radar-sweep"></span></div>' +
+        '<p id="player-carregando-texto" role="status"></p>' +
+      '</div>' +
+      '<div class="player-fim" id="player-fim">' +
+        '<div class="player-fim-padrao">' +
+          '<strong>Fim da aula 🎉</strong>' +
+          '<div class="player-fim-acoes">' +
+            '<button class="principal" id="player-fim-concluir" onclick="marcarAulaConcluida()">Marcar como concluída</button>' +
+            '<button id="player-fim-proxima" onclick="irParaProximaAula()">Próxima aula →</button>' +
+            '<button onclick="assistirDeNovo()">↻ Assistir de novo</button>' +
+          '</div>' +
         '</div>' +
+        '<div class="player-fim-oferta" id="player-fim-oferta"></div>' +
       '</div>' +
       '<div class="player-erro" id="player-erro"></div>' +
       '<div class="player-controles" id="player-controles">' +
@@ -2231,9 +2298,12 @@
     '</div>';
   }
 
-  function definirEstadoPlayer(estado) {
+  // textoCarregando: frase embaixo do radar no estado 'carregando' (sem ela, mantém a que já estava).
+  function definirEstadoPlayer(estado, textoCarregando) {
     const el = document.getElementById('aula-player');
     if (!el) return;
+    if (textoCarregando !== undefined) document.getElementById('player-carregando-texto').textContent = textoCarregando;
+    if (estado !== 'fim') { cancelarContagemProxima(); document.getElementById('player-fim').classList.remove('com-oferta'); }
     el.classList.remove('estado-capa', 'estado-carregando', 'estado-tocando', 'estado-pausado', 'estado-fim', 'estado-erro');
     el.classList.add('estado-' + estado);
     const btn = document.getElementById('player-btn-play');
@@ -2286,18 +2356,27 @@
     definirEstadoPlayer('capa');
   }
 
-  function tocarAulaAtual() {
+  function tocarAulaAtual(textoCarregando) {
     const aula = aulaAtualBonus();
     if (!aula) return;
+    const texto = textoCarregando || 'Carregando a aula';
     const inicio = Math.floor(posicaoPorAula[aula.aula_id] || 0);
     if (ytPlayer && ytPronto) {
       if (ytAulaCarregadaId === aula.aula_id) ytPlayer.playVideo();
       else { ytPlayer.loadVideoById({ videoId: aula.youtube_id, startSeconds: inicio }); ytAulaCarregadaId = aula.aula_id; }
       aplicarVelocidadePlayer();
-      definirEstadoPlayer('carregando');
+      definirEstadoPlayer('carregando', texto);
+      // Se o navegador não deixar começar sozinho, cai na tela de "toque para tocar" em vez de ficar carregando.
+      setTimeout(() => {
+        const el = document.getElementById('aula-player');
+        if (el && el.classList.contains('estado-carregando') && ytPlayer && ytPronto && ytAulaCarregadaId === aula.aula_id && [1, 2, 0, 3].indexOf(ytPlayer.getPlayerState()) === -1) {
+          definirEstadoPlayer('pausado');
+          el.classList.add('nao-iniciado');
+        }
+      }, 5000);
       return;
     }
-    definirEstadoPlayer('carregando');
+    definirEstadoPlayer('carregando', texto);
     carregarApiYoutube().then(() => {
       if (!document.getElementById('yt-alvo') || aulaBonusAtualId !== aula.aula_id) return;
       ytPronto = false;
@@ -2319,7 +2398,16 @@
     const estado = ev.data;
     if (estado === 1) { const el = document.getElementById('aula-player'); if (el) el.classList.remove('nao-iniciado'); definirEstadoPlayer('tocando'); iniciarTimerProgresso(); }
     else if (estado === 2) { definirEstadoPlayer('pausado'); pararTimerProgresso(); atualizarProgressoPlayer(); }
-    else if (estado === 0) { pararTimerProgresso(); posicaoPorAula[ytAulaCarregadaId] = 0; atualizarFimPlayer(); definirEstadoPlayer('fim'); }
+    else if (estado === 0) {
+      pararTimerProgresso();
+      posicaoPorAula[ytAulaCarregadaId] = 0;
+      // Acabou a aula: emenda direto na próxima. Aula com oferta para no fim (oferta + contagem para a
+      // próxima). Na última, mostra a tela de fim.
+      const aulaQueAcabou = aulaAtualBonus();
+      if (aulaQueAcabou && aulaQueAcabou.oferta) mostrarFimComOferta(aulaQueAcabou);
+      else if (proximaAulaBonus()) irParaProximaAula(false);
+      else { atualizarFimPlayer(); definirEstadoPlayer('fim'); }
+    }
     else if (estado === 3) { const el = document.getElementById('aula-player'); if (el && !el.classList.contains('estado-tocando')) definirEstadoPlayer('carregando'); }
   }
 
@@ -2354,6 +2442,95 @@
     const indice = aulasBonus ? aulasBonus.aulas.findIndex(a => a.aula_id === aulaBonusAtualId) : -1;
     const btnProxima = document.getElementById('player-fim-proxima');
     if (btnProxima) btnProxima.style.display = aulasBonus && aulasBonus.aulas[indice + 1] ? '' : 'none';
+  }
+
+  // ---------- Oferta da aula (ex.: VMN na aula 5), configurada na coluna "oferta" da planilha ----------
+  const SEGUNDOS_CONTAGEM_PROXIMA = 10;
+  let contagemProximaTimer = null;
+
+  // UTM para a venda aparecer no funil como vinda desta aula. Só aceita os mesmos domínios que o backend.
+  function urlOfertaComUtm(url, aulaId) {
+    try {
+      const destino = new URL(url);
+      if (destino.protocol !== 'https:' || ['sun.eduzz.com', 'www.altusedu.com.br', 'altusedu.com.br'].indexOf(destino.hostname) === -1) return '';
+      destino.searchParams.set('utm_source', 'rvr-pro');
+      destino.searchParams.set('utm_medium', 'app');
+      destino.searchParams.set('utm_campaign', 'primeiros-passos-' + aulaId);
+      return destino.toString();
+    } catch (e) { return ''; }
+  }
+
+  function htmlOfertaAula(aula) {
+    const opcoes = (aula.oferta.opcoes || []).map((op, i) => {
+      const url = urlOfertaComUtm(op.url, aula.aula_id);
+      if (!url) return '';
+      return '<a class="oferta-opcao' + (i === 0 ? ' principal' : '') + '" href="' + escaparTextoEvolucao(url) + '" target="_blank" rel="noopener" onclick="cliqueOfertaAula()">' +
+        '<strong>' + escaparTextoEvolucao(op.texto) + '</strong>' +
+        (op.detalhes || []).map(d => '<small>' + escaparTextoEvolucao(d) + '</small>').join('') +
+      '</a>';
+    }).join('');
+    if (!opcoes) return '';
+    return '<div class="oferta">' +
+      '<button class="oferta-botao" onclick="abrirOpcoesOferta(this)">' + escaparTextoEvolucao(aula.oferta.botao) + '</button>' +
+      '<div class="oferta-opcoes">' + opcoes + '</div>' +
+      '<button class="oferta-voltar" onclick="fecharOpcoesOferta(this)">Voltar</button>' +
+    '</div>';
+  }
+
+  function abrirOpcoesOferta(botao) {
+    const oferta = botao.closest('.oferta');
+    oferta.classList.add('aberta');
+    const fim = oferta.closest('.player-fim-oferta');
+    if (fim) { fim.classList.add('oferta-aberta'); cancelarContagemProxima(); }
+  }
+
+  function fecharOpcoesOferta(botao) {
+    const oferta = botao.closest('.oferta');
+    oferta.classList.remove('aberta');
+    const fim = oferta.closest('.player-fim-oferta');
+    if (fim) fim.classList.remove('oferta-aberta');
+  }
+
+  // Abriu o checkout (nova aba): pausa a aula para o aluno não perder o ponto.
+  function cliqueOfertaAula() {
+    cancelarContagemProxima();
+    if (ytPlayer && ytPronto && ytPlayer.getPlayerState() === 1) ytPlayer.pauseVideo();
+  }
+
+  function mostrarFimComOferta(aula) {
+    const html = htmlOfertaAula(aula);
+    const proxima = proximaAulaBonus();
+    if (!html) { if (proxima) irParaProximaAula(false); else { atualizarFimPlayer(); definirEstadoPlayer('fim'); } return; }
+    const caixa = document.getElementById('player-fim-oferta');
+    caixa.classList.remove('oferta-aberta');
+    caixa.innerHTML = '<strong>Fim da aula 🎉</strong>' +
+      '<div class="player-fim-linha">' + html +
+        (proxima ? '<button class="btn-fim-proxima" id="btn-fim-proxima" onclick="irParaProximaAula()">Próxima aula →</button>' : '') +
+      '</div>';
+    definirEstadoPlayer('fim');
+    document.getElementById('player-fim').classList.add('com-oferta');
+    if (proxima) iniciarContagemProxima();
+  }
+
+  function iniciarContagemProxima() {
+    cancelarContagemProxima();
+    let restante = SEGUNDOS_CONTAGEM_PROXIMA;
+    const atualizar = () => { const b = document.getElementById('btn-fim-proxima'); if (b) b.textContent = 'Próxima aula em ' + restante + 's'; };
+    atualizar();
+    contagemProximaTimer = setInterval(() => {
+      if (document.hidden) return; // não avança com o app em segundo plano
+      restante--;
+      if (restante <= 0) { cancelarContagemProxima(); irParaProximaAula(false); }
+      else atualizar();
+    }, 1000);
+  }
+
+  function cancelarContagemProxima() {
+    if (!contagemProximaTimer) return;
+    clearInterval(contagemProximaTimer);
+    contagemProximaTimer = null;
+    const b = document.getElementById('btn-fim-proxima');
+    if (b) b.textContent = 'Próxima aula →';
   }
 
   function assistirDeNovo() {
@@ -2514,12 +2691,14 @@
 
   // Sai da aba: pausa (o player continua montado e volta pausado no mesmo ponto).
   function pausarPlayerAulas() {
+    cancelarContagemProxima();
     if (telaCheiaNativaAtiva()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
     sairTelaCheiaSimulada();
     if (ytPlayer && ytPronto) { try { ytPlayer.pauseVideo(); } catch (e) {} }
   }
 
   function destruirPlayerAulas() {
+    cancelarContagemProxima();
     pararTimerProgresso();
     clearTimeout(ytTimerControles);
     sairTelaCheiaSimulada();
@@ -2536,11 +2715,11 @@
   }
 
   // tocar: com o player já criado, a troca de aula já começa tocando (o toque do aluno libera o autoplay).
-  function selecionarAula(aulaId, rolarAtePlayer, tocar) {
+  function selecionarAula(aulaId, rolarAtePlayer, tocar, textoCarregando) {
     if (!aulasBonus) return;
     const aula = aulasBonus.aulas.find(a => a.aula_id === aulaId) || aulasBonus.aulas[0];
     aulaBonusAtualId = aula.aula_id;
-    if (tocar && ytPlayer && ytPronto) tocarAulaAtual(); else mostrarCapaAula(aula);
+    if (tocar && ytPlayer && ytPronto) tocarAulaAtual(textoCarregando); else mostrarCapaAula(aula);
     atualizarPainelAulas();
     document.getElementById('aula-msg').textContent = '';
     if (rolarAtePlayer && window.innerWidth < 1100) {
@@ -2553,11 +2732,16 @@
     }
   }
 
-  function irParaProximaAula() {
-    if (!aulasBonus) return;
+  function proximaAulaBonus() {
+    if (!aulasBonus) return null;
     const indice = aulasBonus.aulas.findIndex(a => a.aula_id === aulaBonusAtualId);
-    const proxima = aulasBonus.aulas[indice + 1];
-    if (proxima) selecionarAula(proxima.aula_id, true, true);
+    return aulasBonus.aulas[indice + 1] || null;
+  }
+
+  // rolarAtePlayer: false quando a troca é automática (fim do vídeo), para não mexer na tela do aluno.
+  function irParaProximaAula(rolarAtePlayer) {
+    const proxima = proximaAulaBonus();
+    if (proxima) selecionarAula(proxima.aula_id, rolarAtePlayer !== false, true, 'Carregando a próxima aula');
   }
 
   function registrarProgressoAula(aulaId, evento) {
@@ -2591,6 +2775,7 @@
 
   function limparAulasBonus() {
     destruirPlayerAulas();
+    promessaAulasBonus = null;
     aulasBonus = null;
     aulaBonusAtualId = "";
     const container = document.getElementById('aulas-conteudo');
