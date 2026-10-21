@@ -331,6 +331,37 @@
     .tip-card { background: var(--card-bg); border-left: 4px solid var(--accent-orange); padding: 18px; margin-bottom: 15px; border-radius: 0 8px 8px 0; }
     .tip-card h3 { font-size: 1.05rem; margin-bottom: 6px; color: var(--text-main); }
     .tip-card p { font-size: 0.95rem; color: var(--text-muted); line-height: 1.5; }
+    /* Playbook Acelerador de Comissões (aba Dicas): leitor somente leitura, páginas em imagem */
+    .pb-barra { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 14px; }
+    .pb-nav { min-height: 44px; min-width: 44px; padding: 0 16px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-main); font-weight: bold; cursor: pointer; font-size: 0.9rem; }
+    .pb-nav:hover { border-color: var(--accent-orange); color: var(--accent-orange); }
+    .pb-nav-pri { background: var(--accent-orange); border-color: var(--accent-orange); color: #fff; }
+    .pb-nav-pri:hover { color: #fff; filter: brightness(1.08); }
+    .pb-zoom { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; color: var(--text-muted); font-family: ui-monospace, Consolas, monospace; font-size: 0.85rem; }
+    .pb-z { padding: 0; font-size: 1.2rem; flex: none !important; width: 44px; }
+    .pb-rolo { overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 70px; }
+    .pb-flutua { position: fixed; right: 18px; bottom: 18px; z-index: 50; display: flex; align-items: center; gap: 10px; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 6px 6px 6px 14px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+    .pb-pos { font-family: ui-monospace, Consolas, monospace; color: var(--text-muted); font-size: 0.9rem; }
+    .pb-paginas { width: 100%; max-width: 860px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+    .pb-pg { position: relative; width: 100%; aspect-ratio: 1240 / 1755; background: #2a2623; border-radius: 6px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,.35); scroll-margin-top: 76px; }
+    .pb-pg img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; -webkit-user-drag: none; }
+    .pb-link { position: absolute; display: block; border-radius: 3px; cursor: pointer; }
+    .pb-link:hover, .pb-link:focus-visible { background: rgba(255,107,26,.14); outline: 2px solid rgba(255,107,26,.6); }
+    .pb-marca { position: absolute; left: 0; right: 0; bottom: 0.6%; text-align: center; font-size: clamp(8px, 1.1vw, 11px); color: rgba(120,100,90,.75); pointer-events: none; font-family: ui-monospace, Consolas, monospace; }
+    .pb-marca-centro { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) rotate(-30deg); white-space: nowrap; font-size: clamp(12px, 2.4vw, 22px); font-weight: bold; color: rgba(120,100,90,.11); pointer-events: none; font-family: ui-monospace, Consolas, monospace; }
+    .pb-tela { display: inline-flex; align-items: center; justify-content: center; padding: 0; flex: none !important; width: 44px; }
+    .pb-tela svg { width: 18px; height: 18px; }
+    /* Tela cheia: a aba vira uma camada sobre o app (funciona também no iPhone, que não tem tela cheia de página) */
+    #tab-dicas.pb-tela-cheia { position: fixed; inset: 0; z-index: 5000; background: var(--bg-dark); overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 0 16px; }
+    #tab-dicas.pb-tela-cheia > h1, #tab-dicas.pb-tela-cheia > .subtitle { display: none; }
+    #tab-dicas.pb-tela-cheia .pb-barra { position: sticky; top: 0; z-index: 3; background: var(--bg-dark); padding: 10px 0; margin-bottom: 6px; }
+    body.pb-tela-cheia-aberta { overflow: hidden; }
+    /* Proteção contra captura: ao perder o foco ou ao tentar imprimir/printar, as páginas ficam borradas */
+    #tab-dicas.pb-protegido .pb-paginas { filter: blur(22px); }
+    .pb-aviso { display: none; position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 5100; max-width: 320px; width: calc(100% - 32px); background: var(--card-bg); border: 1px solid var(--accent-orange); border-radius: 12px; padding: 18px; text-align: center; color: var(--text-main); font-weight: bold; box-shadow: 0 10px 30px rgba(0,0,0,.45); }
+    #tab-dicas.pb-protegido .pb-aviso { display: block; }
+    @media print { #tab-dicas .pb-rolo, #tab-dicas .pb-barra, #tab-dicas .pb-flutua { display: none !important; } }
+    @media (max-width: 600px) { .pb-barra .pb-nav { padding: 0 10px; font-size: 0.82rem; flex: 1; } .pb-zoom { width: 100%; justify-content: flex-end; } .pb-paginas { gap: 10px; } .pb-flutua { right: 12px; bottom: 12px; } }
 
     .aulas-layout { display: grid; gap: 20px; max-width: 1200px; }
     @media (min-width: 1100px) { .aulas-layout { grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr); align-items: start; } }
@@ -942,37 +973,28 @@
 
       <!-- ABA 6: DICAS -->
       <div id="tab-dicas" class="tab-content">
-        <h1>Acelerador de Comissões — 20 Dicas de Ouro</h1>
-        <p class="subtitle">Estratégias práticas para aumentar ticket médio e conversão.</p>
-        <div class="sub-nav">
-          <button class="sub-btn active" id="btn-mod-ticket" onclick="switchDicaSub('ticket', event)">🚀 Módulo 1: Aumentar Ticket Médio (10 Dicas)</button>
-          <button class="sub-btn" id="btn-mod-conversao" onclick="switchDicaSub('conversao', event)">🎯 Módulo 2: Aumentar Taxa de Conversão (10 Dicas)</button>
-        </div>
+        <h1>Acelerador de Comissões</h1>
+        <p class="subtitle">Playbook com 20 dicas de ouro, rápidas de ler e prontas para aplicar, para aumentar o seu ticket médio e a sua taxa de conversão.</p>
 
-        <div id="sub-dicas-ticket" class="sub-dica-content">
-          <div class="tip-card"><h3>Dica 1: A Regra do "Por Apenas Mais..."</h3><p>Quando o cliente decidir a compra básica, ofereça a versão superior destacando apenas a pequena diferença de preço.</p></div>
-          <div class="tip-card"><h3>Dica 2: Cross-Sell Pré-Checkout</h3><p>Ofereça o produto complementar no exato momento do 'SIM', antes de mandar a chave PIX.</p></div>
-          <div class="tip-card"><h3>Dica 3: Ancoragem com 3 Pacotes</h3><p>Apresente as opções Básico, Alvo e Premium. O cliente tenderá instintivamente a escolher a opção do meio.</p></div>
-          <div class="tip-card"><h3>Dica 4: Combo de Proteção/Garantia</h3><p>Adicione um serviço extra de suporte exclusivo ou garantia estendida como opcional pago.</p></div>
-          <div class="tip-card"><h3>Dica 5: O Pacote Familiar/Equipe</h3><p>Incentive a compra de mais unidades com desconto progressivo para presentear ou usar em equipe.</p></div>
-          <div class="tip-card"><h3>Dica 6: O Bônus Condicionado ao Ticket Alto</h3><p>Crie um bônus que o cliente só ganha se atingir determinado valor de pedido.</p></div>
-          <div class="tip-card"><h3>Dica 7: Edição Limitada / Item Exclusivo</h3><p>Ofereça um item complementar com estoque limitado para gerar desejo imediato.</p></div>
-          <div class="tip-card"><h3>Dica 8: Eliminação do Frete/Taxa por Valor</h3><p>Mostre que adicionando mais R$ 50 num produto extra, ele economiza na taxa de envio/serviço.</p></div>
-          <div class="tip-card"><h3>Dica 9: A Pergunta da Necessidade Oculta</h3><p>Pergunte: "Além deste item, você já tem o [item complementar] para usar junto?".</p></div>
-          <div class="tip-card"><h3>Dica 10: Renovação Antecipada com Desconto</h3><p>Para serviços/planos, ofereça desconto para contratação de maior período à vista.</p></div>
+        <div class="pb-barra">
+          <button type="button" class="pb-nav" onclick="irPaginaPlaybook(1)">Capa</button>
+          <button type="button" class="pb-nav" onclick="irPaginaPlaybook(4)">Sumário</button>
+          <button type="button" class="pb-nav" onclick="irPaginaPlaybook(5)">Cap. 01</button>
+          <button type="button" class="pb-nav" onclick="irPaginaPlaybook(11)">Cap. 02</button>
+          <span class="pb-zoom">
+            <button type="button" class="pb-nav pb-z" onclick="zoomPlaybook(-1)" aria-label="Diminuir">&minus;</button>
+            <span id="pb-zoom-val">100%</span>
+            <button type="button" class="pb-nav pb-z" onclick="zoomPlaybook(1)" aria-label="Ampliar">+</button>
+            <button type="button" class="pb-nav pb-tela" id="pb-btn-tela" onclick="alternarTelaCheiaPlaybook()" aria-label="Tela cheia"></button>
+          </span>
         </div>
-
-        <div id="sub-dicas-conversao" class="sub-dica-content" style="display: none;">
-          <div class="tip-card"><h3>Dica 1: Regra dos 5 Minutos no WhatsApp</h3><p>Responda o primeiro 'Oi' imediatamente. Rapidez inicial aumenta a conversão em até 400%.</p></div>
-          <div class="tip-card"><h3>Dica 2: Fechamento por Dupla Escolha</h3><p>Pergunte: "Prefere acerto via PIX ou cartão?" em vez de "Vai querer fechar?".</p></div>
-          <div class="tip-card"><h3>Dica 3: A Trava do "Vou Pensar"</h3><p>Pergunte qual dúvida em relação ao produto ou pagamento ainda impede o fechamento agora.</p></div>
-          <div class="tip-card"><h3>Dica 4: Prova Social em Áudio/Print</h3><p>Envie o depoimento de um cliente similar logo após apresentar o preço.</p></div>
-          <div class="tip-card"><h3>Dica 5: Escassez Real de Agendamento/Estoque</h3><p>Comunique que a condição especial dura apenas para pedidos confirmados até as 18h.</p></div>
-          <div class="tip-card"><h3>Dica 6: Chamada de Vídeo/Áudio Personalizado</h3><p>Envie um áudio chamando o cliente pelo nome para gerar conexão humana imediata.</p></div>
-          <div class="tip-card"><h3>Dica 7: Reativação de Clientes Sumidos</h3><p>Envie: "João, consegui liberar aquela condição diferenciada que conversamos. Posso apertar o Play aqui?".</p></div>
-          <div class="tip-card"><h3>Dica 8: Eliminação de Risco (Garantia)</h3><p>Destaque a garantia incondicional no exato momento da trava de decisão.</p></div>
-          <div class="tip-card"><h3>Dica 9: A Técnica da Reserva do Pedido</h3><p>Pergunte se pode deixar o pedido reservado por 2 horas no sistema enquanto ele decide.</p></div>
-          <div class="tip-card"><h3>Dica 10: O Script de Resgate no Fim do Mês</h3><p>Aborde todos os orçamentos abertos do mês oferecendo um incentivo final para bater meta.</p></div>
+        <div class="pb-aviso" id="pb-aviso">Conteúdo protegido: leitura somente dentro do app.</div>
+        <div class="pb-rolo" id="pb-rolo">
+          <div id="pb-paginas" class="pb-paginas" oncontextmenu="return false;"></div>
+        </div>
+        <div class="pb-flutua">
+          <span class="pb-pos" id="pb-pos">01 / 18</span>
+          <button type="button" class="pb-nav pb-nav-pri" onclick="irPaginaPlaybook(4)">Sumário</button>
         </div>
       </div>
 
@@ -1014,8 +1036,14 @@
 
   // ==================== NOVIDADES DA VERSÃO (CHANGELOG) ====================
   // Para anunciar uma novidade nova: atualize APP_VERSION e adicione uma entrada no topo do CHANGELOG.
-  const APP_VERSION = "2026.10.15.2";
+  const APP_VERSION = "2026.10.21";
   const CHANGELOG = [
+    { versao: "2026.10.21", titulo: "Acelerador de Comissões virou playbook", itens: [
+      "20 dicas de ouro, cada uma com o passo a passo na prática",
+      "Capítulo 01: Ticket Médio. Capítulo 02: Taxa de Conversão",
+      "Leia direto no app, com sumário e capítulos clicáveis",
+      "Novo modo tela cheia para ler sem distrações"
+    ]},
     { versao: "2026.10.15.2", titulo: "Aulas concluídas automaticamente", itens: [
       "Assistiu 70% da aula? Ela já fica marcada como concluída",
       "O botão \"Marcar como concluída\" continua disponível quando você quiser"
@@ -1074,9 +1102,9 @@
   }
 
   function fazerLogoutPorInatividade() {
-    // Quem só está assistindo uma aula não mexe no app e parece parado. Com um vídeo tocando,
+    // Quem só está assistindo uma aula (ou lendo o playbook) não mexe no app e parece parado. Com um vídeo tocando,
     // o logout espera até 1h desde a última interação com o app, em vez de 10 minutos.
-    if (assistindoAulaBonus() && Date.now() - ultimaAtividadeUsuario < 60 * 60 * 1000) {
+    if ((assistindoAulaBonus() || lendoEbookAcelerador()) && Date.now() - ultimaAtividadeUsuario < 60 * 60 * 1000) {
       timerInatividade = setTimeout(fazerLogoutPorInatividade, 10 * 60 * 1000);
       return;
     }
@@ -1101,6 +1129,8 @@
     usuarioEmail = "";
     usuarioToken = "";
     limparAulasBonus();
+    sairTelaCheiaPlaybook();
+    limparPlaybook();
     document.getElementById('auth-screen').style.display = 'flex';
     document.getElementById('app-main-content').style.display = 'none';
     const topbar = document.getElementById('mobile-topbar-header');
@@ -2927,6 +2957,183 @@
     input.value = "R$ " + v;
   }
 
+  // ---------- Playbook Acelerador de Comissões: leitor somente leitura (sem PDF, sem download) ----------
+  // Cada página é uma imagem; os links do sumário, das capas de capítulo e do cabeçalho viram áreas clicáveis.
+  // PB_LINKS: [página, x%, y%, largura%, altura%, destino (nº da página ou URL)]
+  const PB_TOTAL = 18;
+  const PB_LINKS = [[4,10.46,17.64,79.16,3.56,3],[4,10.46,22.27,37.69,4.63,5],[4,10.46,27.88,37.69,2.58,6],[4,10.46,30.56,37.69,2.49,6],[4,10.46,33.14,37.69,2.58,7],[4,10.46,35.81,37.69,2.49,7],[4,10.46,38.39,37.69,2.58,8],[4,10.46,41.07,37.69,2.58,8],[4,10.46,43.74,37.69,2.49,9],[4,10.46,46.32,37.69,2.58,9],[4,10.46,49.0,37.69,2.49,10],[4,10.46,51.58,37.69,3.92,10],[4,51.94,22.27,37.69,4.63,11],[4,51.94,27.88,37.69,2.58,12],[4,51.94,30.56,37.69,2.49,12],[4,51.94,33.14,37.69,2.58,13],[4,51.94,35.81,37.69,2.49,13],[4,51.94,38.39,37.69,3.92,14],[4,51.94,42.4,37.69,3.92,14],[4,51.94,46.41,37.69,2.49,15],[4,51.94,49.0,37.69,2.58,15],[4,51.94,51.67,37.69,2.49,16],[4,51.94,54.25,37.69,2.58,16],[4,10.46,59.95,79.16,3.56,17],[5,10.46,76.25,37.69,3.21,6],[5,10.46,79.55,37.69,3.21,6],[5,10.46,82.85,37.69,3.12,7],[5,10.46,86.05,37.69,3.21,7],[5,10.46,89.35,37.69,3.12,8],[5,51.94,76.25,37.69,3.21,8],[5,51.94,79.55,37.69,3.21,9],[5,51.94,82.85,37.69,3.12,9],[5,51.94,86.05,37.69,3.21,10],[5,51.94,89.35,37.69,3.12,10],[6,9.58,3.39,32.65,1.16,4],[7,9.58,3.39,32.65,1.16,4],[8,9.58,3.39,32.65,1.16,4],[9,9.58,3.39,32.65,1.16,4],[10,9.58,3.39,32.65,1.16,4],[11,10.46,74.83,37.69,3.21,12],[11,10.46,78.13,37.69,3.21,12],[11,10.46,81.42,37.69,3.12,13],[11,10.46,84.63,37.69,3.21,13],[11,10.46,87.92,37.69,4.54,14],[11,51.94,74.83,37.69,4.63,14],[11,51.94,79.55,37.69,3.21,15],[11,51.94,82.85,37.69,3.12,15],[11,51.94,86.05,37.69,3.21,16],[11,51.94,89.35,37.69,3.12,16],[12,9.58,3.39,32.65,1.16,4],[13,9.58,3.39,32.65,1.16,4],[14,9.58,3.39,32.65,1.16,4],[15,9.58,3.39,32.65,1.16,4],[16,9.58,3.39,32.65,1.16,4],[18,12.48,69.93,37.31,1.6,"https://www.altusedu.com.br/vendas-movem-negocios"]];
+  let pbMontado = false;
+
+  function abrirEbookAcelerador() {
+    const box = document.getElementById('pb-paginas');
+    if (!box || pbMontado) return;
+    pbMontado = true;
+    const marca = usuarioEmail ? 'Licenciado para ' + usuarioEmail + ' | Grupo Altus Educacional' : 'Grupo Altus Educacional';
+    for (let n = 1; n <= PB_TOTAL; n++) {
+      const nn = String(n).padStart(2, '0');
+      const pg = document.createElement('div');
+      pg.className = 'pb-pg';
+      pg.id = 'pb-pg-' + n;
+      pg.dataset.n = n;
+      const img = document.createElement('img');
+      img.src = 'ebook/pg/pg' + nn + '.webp';
+      img.alt = 'Página ' + n + ' do playbook Acelerador de Comissões';
+      img.loading = n <= 2 ? 'eager' : 'lazy';
+      img.decoding = 'async';
+      img.draggable = false;
+      pg.appendChild(img);
+      PB_LINKS.filter(l => l[0] === n).forEach(l => {
+        const a = document.createElement('a');
+        a.className = 'pb-link';
+        a.style.cssText = 'left:' + l[1] + '%;top:' + l[2] + '%;width:' + l[3] + '%;height:' + l[4] + '%';
+        if (typeof l[5] === 'string') {
+          a.href = l[5]; a.target = '_blank'; a.rel = 'noopener';
+          a.setAttribute('aria-label', 'Abrir ' + l[5]);
+        } else {
+          a.href = '#';
+          a.setAttribute('aria-label', 'Ir para a página ' + l[5]);
+          a.addEventListener('click', ev => { ev.preventDefault(); irPaginaPlaybook(l[5]); });
+        }
+        pg.appendChild(a);
+      });
+      const m = document.createElement('div');
+      m.className = 'pb-marca';
+      m.textContent = marca;
+      pg.appendChild(m);
+      if (usuarioEmail) {
+        const mc = document.createElement('div');
+        mc.className = 'pb-marca-centro';
+        mc.textContent = usuarioEmail;
+        pg.appendChild(mc);
+      }
+      box.appendChild(pg);
+    }
+    if ('IntersectionObserver' in window) {
+      const pos = document.getElementById('pb-pos');
+      const obs = new IntersectionObserver(ents => {
+        ents.forEach(e => { if (e.isIntersecting && pos) pos.textContent = String(e.target.dataset.n).padStart(2, '0') + ' / ' + PB_TOTAL; });
+      }, { rootMargin: '-45% 0px -50% 0px' });
+      box.querySelectorAll('.pb-pg').forEach(p => obs.observe(p));
+    }
+  }
+
+  // Na troca de usuário, remonta o leitor com a marca d'água do novo e-mail.
+  function limparPlaybook() {
+    const box = document.getElementById('pb-paginas');
+    if (box) box.innerHTML = '';
+    pbMontado = false;
+  }
+
+  // Zoom do leitor (o app bloqueia o zoom de pinça, então no celular a leitura amplia por aqui).
+  const PB_ZOOMS = [1, 1.5, 2, 2.5];
+  let pbZoomIdx = 0;
+  function zoomPlaybook(dir) {
+    const box = document.getElementById('pb-paginas');
+    if (!box) return;
+    const atual = document.getElementById('pb-pos') ? parseInt(document.getElementById('pb-pos').textContent, 10) || 1 : 1;
+    pbZoomIdx = Math.max(0, Math.min(PB_ZOOMS.length - 1, pbZoomIdx + dir));
+    const z = PB_ZOOMS[pbZoomIdx];
+    box.style.width = (z * 100) + '%';
+    box.style.maxWidth = (860 * z) + 'px';
+    document.getElementById('pb-zoom-val').textContent = Math.round(z * 100) + '%';
+    const alvo = document.getElementById('pb-pg-' + atual);
+    if (alvo) alvo.scrollIntoView({ block: 'start' });
+  }
+
+  function irPaginaPlaybook(n) {
+    abrirEbookAcelerador();
+    const alvo = document.getElementById('pb-pg-' + n);
+    if (alvo) alvo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function lendoEbookAcelerador() {
+    const aba = document.getElementById('tab-dicas');
+    return !!(aba && aba.classList.contains('active'));
+  }
+
+  // Tela cheia do playbook: a aba vira uma camada fixa sobre o app e, onde o navegador deixa,
+  // a página inteira entra em tela cheia (some a barra do navegador). No iPhone fica só a camada.
+  let pbTelaCheiaNativa = false;
+  function alternarTelaCheiaPlaybook() {
+    const aba = document.getElementById('tab-dicas');
+    if (!aba) return;
+    if (aba.classList.contains('pb-tela-cheia')) { sairTelaCheiaPlaybook(); return; }
+    aba.classList.add('pb-tela-cheia');
+    document.body.classList.add('pb-tela-cheia-aberta');
+    const raiz = document.documentElement;
+    const pedir = raiz.requestFullscreen || raiz.webkitRequestFullscreen;
+    if (pedir && (document.fullscreenEnabled || document.webkitFullscreenEnabled) && !telaCheiaNativaAtiva()) {
+      Promise.resolve(pedir.call(raiz)).then(() => { pbTelaCheiaNativa = true; }).catch(() => {});
+    }
+    atualizarBotaoTelaPlaybook();
+  }
+
+  function sairTelaCheiaPlaybook() {
+    const aba = document.getElementById('tab-dicas');
+    if (!aba || !aba.classList.contains('pb-tela-cheia')) return;
+    aba.classList.remove('pb-tela-cheia');
+    document.body.classList.remove('pb-tela-cheia-aberta');
+    if (pbTelaCheiaNativa && telaCheiaNativaAtiva()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    pbTelaCheiaNativa = false;
+    atualizarBotaoTelaPlaybook();
+  }
+
+  function atualizarBotaoTelaPlaybook() {
+    const btn = document.getElementById('pb-btn-tela');
+    const aba = document.getElementById('tab-dicas');
+    if (!btn || !aba) return;
+    const cheia = aba.classList.contains('pb-tela-cheia');
+    btn.innerHTML = cheia ? ICONE_SAIR_TELA_CHEIA : ICONE_TELA_CHEIA;
+    btn.setAttribute('aria-label', cheia ? 'Sair da tela cheia' : 'Tela cheia');
+    btn.title = cheia ? 'Sair da tela cheia' : 'Tela cheia';
+  }
+
+  // Esc no navegador sai da tela cheia nativa sem gerar keydown: fecha a camada junto.
+  function aoMudarTelaCheiaPlaybook() {
+    if (pbTelaCheiaNativa && !telaCheiaNativaAtiva()) { pbTelaCheiaNativa = false; sairTelaCheiaPlaybook(); }
+  }
+  document.addEventListener('fullscreenchange', aoMudarTelaCheiaPlaybook);
+  document.addEventListener('webkitfullscreenchange', aoMudarTelaCheiaPlaybook);
+
+  // Proteção do playbook contra impressão e captura de tela. No navegador não existe bloqueio total
+  // (o print do celular não pode ser impedido por um site); aqui o app dificulta no computador e
+  // a marca d'água com o e-mail do aluno identifica qualquer cópia.
+  let pbTimerProtecao = null;
+  function protegerPlaybook(ms) {
+    const aba = document.getElementById('tab-dicas');
+    if (!aba) return;
+    aba.classList.add('pb-protegido');
+    clearTimeout(pbTimerProtecao);
+    if (ms) pbTimerProtecao = setTimeout(() => aba.classList.remove('pb-protegido'), ms);
+  }
+  function liberarPlaybook() {
+    clearTimeout(pbTimerProtecao);
+    const aba = document.getElementById('tab-dicas');
+    if (aba) aba.classList.remove('pb-protegido');
+  }
+
+  document.addEventListener('keydown', (e) => {
+    if (!lendoEbookAcelerador()) return;
+    if (e.key === 'Escape') { sairTelaCheiaPlaybook(); return; }
+    const k = (e.key || '').toLowerCase();
+    if ((e.ctrlKey || e.metaKey) && (k === 'p' || k === 's')) { e.preventDefault(); protegerPlaybook(2500); }
+    // Atalhos de recorte do Mac (Cmd+Shift+3/4/5) e do Windows (Win+Shift+S)
+    if (e.metaKey && e.shiftKey && ['3', '4', '5', 's'].includes(k)) protegerPlaybook(4000);
+  }, true);
+  document.addEventListener('keyup', (e) => {
+    if (!lendoEbookAcelerador() || e.key !== 'PrintScreen') return;
+    protegerPlaybook(4000);
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText('').catch(() => {});
+  });
+  window.addEventListener('beforeprint', () => { if (lendoEbookAcelerador()) protegerPlaybook(); });
+  window.addEventListener('afterprint', liberarPlaybook);
+  // Ao sair da janela (ferramenta de recorte, troca de app), as páginas ficam borradas até voltar.
+  window.addEventListener('blur', () => { if (lendoEbookAcelerador()) protegerPlaybook(); });
+  window.addEventListener('focus', liberarPlaybook);
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) { if (lendoEbookAcelerador()) protegerPlaybook(); } else liberarPlaybook();
+  });
+
   function switchTab(tabId, ev) {
     document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
     document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
@@ -2937,18 +3144,13 @@
     }
     if (tabId === 'historico') renderHistorico();
     if (tabId === 'evolucao') renderEvolucao();
+    if (tabId === 'dicas') { abrirEbookAcelerador(); atualizarBotaoTelaPlaybook(); }
+    else sairTelaCheiaPlaybook();
     document.getElementById('btn-primeiros-passos').classList.toggle('active', tabId === 'aulas');
     if (tabId === 'aulas') abrirPrimeirosPassos();
     else pausarPlayerAulas();
     const sidebar = document.getElementById('sidebar-menu');
     if (sidebar && window.innerWidth <= 768) sidebar.classList.remove('open');
-  }
-
-  function switchDicaSub(type, ev) {
-    document.querySelectorAll('.sub-dica-content').forEach(el => el.style.display = 'none');
-    document.querySelectorAll('.sub-btn').forEach(el => el.classList.remove('active'));
-    document.getElementById('sub-dicas-' + type).style.display = 'block';
-    if (ev) ev.currentTarget.classList.add('active');
   }
 
   function salvarVenda(e) {
