@@ -63,6 +63,16 @@
       font-size: 0.85rem; font-weight: bold; align-items: center; gap: 12px; cursor: pointer;
     }
 
+    /* Aviso discreto: só aparece quando há alterações que ainda não chegaram à nuvem */
+    #aviso-sync {
+      display: none; position: fixed; left: 50%; transform: translateX(-50%); bottom: 18px; z-index: 900; width: max-content; max-width: calc(100% - 24px);
+      align-items: center; gap: 8px; padding: 9px 14px; border-radius: 999px; cursor: pointer;
+      background: var(--card-bg); color: var(--text-main); border: 1px solid var(--accent-yellow);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.3); font-family: inherit; font-size: 0.8rem; font-weight: 600; text-align: left; white-space: nowrap;
+    }
+    #aviso-sync::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--accent-yellow); flex-shrink: 0; }
+    @media (max-width: 600px) { #aviso-sync { bottom: 76px; } }
+
     #auth-screen {
       display: flex; height: 100vh; width: 100vw; background-color: var(--bg-dark); color: var(--text-main);
       flex-direction: column; align-items: center; justify-content: center; padding: 20px; position: fixed; top: 0; left: 0; z-index: 9999;
@@ -498,6 +508,7 @@
 <body>
 
 <div id="update-toast" onclick="_0x5a2b()">🚀 Nova versão disponível! <u>Clique aqui para atualizar</u></div>
+<button type="button" id="aviso-sync" onclick="tentarEnviarAgora()" aria-live="polite"></button>
 
 <!-- Pop-up Inteligente VMN -->
 <div id="vmn-popup-overlay">
@@ -1128,6 +1139,7 @@
     localStorage.removeItem(_0x3a2b[7]);
     usuarioEmail = "";
     usuarioToken = "";
+    pausarFilaSync();
     limparAulasBonus();
     sairTelaCheiaPlaybook();
     limparPlaybook();
@@ -1235,6 +1247,7 @@
     localStorage.removeItem(_0x3a2b[7]);
     usuarioEmail = "";
     usuarioToken = "";
+    pausarFilaSync();
     limparAulasBonus();
     esconderErroAuth();
     document.getElementById('auth-screen').style.display = 'flex';
@@ -1748,8 +1761,16 @@
     renderAtendimentos();
 
     checarExibicaoPopupVmn();
-    carregarVendasNuvemSilencioso();
-    carregarHistoricoNuvemSilencioso();
+    carregarFilaSync();
+    if (filaSync.length) {
+      // Ficou alteração sem enviar da última vez: manda primeiro. Ler a nuvem agora apagaria
+      // o que só existe neste aparelho; a leitura acontece quando a fila esvaziar.
+      lerNuvemAoEsvaziarFila = true;
+      processarFilaSync();
+    } else {
+      carregarVendasNuvemSilencioso();
+      carregarHistoricoNuvemSilencioso();
+    }
   }
 
   function renderAtendimentos() {
@@ -1788,7 +1809,7 @@
   }
 
   function executarRetornarVendas() {
-    if (!usuarioEmail) return;
+    if (!usuarioEmail || envioPendenteBloqueiaRestauracao()) return;
     if (confirm("Deseja retornar para o radar as vendas do mês corrente que estavam com exclusão ativa?")) {
       mostrarLoading("Retornando vendas...");
       fetch(API_NUVEM_URL + '?action=retornar_vendas_excluidas&usuario_id=' + encodeURIComponent(usuarioEmail) + '&token=' + encodeURIComponent(usuarioToken) + '&origemHost=' + encodeURIComponent(ORIGEM_HOST), { redirect: 'follow' })
@@ -1809,7 +1830,7 @@
   }
 
   function executarRestaurarHistorico() {
-    if (!usuarioEmail) return;
+    if (!usuarioEmail || envioPendenteBloqueiaRestauracao()) return;
     if (confirm("Deseja restaurar para o aplicativo os relatórios de meses anteriores excluídos?")) {
       mostrarLoading("Restaurando histórico...");
       fetch(API_NUVEM_URL + '?action=restaurar_historico_excluido&usuario_id=' + encodeURIComponent(usuarioEmail) + '&token=' + encodeURIComponent(usuarioToken) + '&origemHost=' + encodeURIComponent(ORIGEM_HOST), { redirect: 'follow' })
@@ -1829,32 +1850,172 @@
     }
   }
 
-  function sincronizarNuvem(vendasParaSincronizar, dadosFechamentoExtra) {
+  // ==================== ENVIO PARA A NUVEM (FILA COM CONFIRMAÇÃO) ====================
+  // Toda alteração entra numa fila guardada no aparelho e só sai dela quando o servidor
+  // confirma que gravou. Sem sinal, com a sessão vencida ou com o servidor ocupado, a
+  // alteração fica na fila e é reenviada (antes o envio falhava em silêncio e, na abertura
+  // seguinte, a leitura da nuvem apagava a venda do aparelho).
+  const CHAVE_FILA_SYNC = 'fila_sync_radar_';
+  let filaSync = [];
+  let filaSyncEnviando = false;
+  let filaSyncTimer = null;
+  let filaSyncFalhas = 0;
+  let lerNuvemAoEsvaziarFila = false;
+  // Sobe a cada alteração local: uma leitura da nuvem que começou antes dela é descartada.
+  let versaoLocal = 0;
+
+  function carregarFilaSync() {
+    try { filaSync = JSON.parse(localStorage.getItem(CHAVE_FILA_SYNC + usuarioEmail)) || []; } catch (e) { filaSync = []; }
+    if (!Array.isArray(filaSync)) filaSync = [];
+    filaSyncFalhas = 0;
+    atualizarAvisoSync();
+  }
+
+  function salvarFilaSync() {
     if (!usuarioEmail) return;
-    const payloadVendas = vendasParaSincronizar || vendas;
-    localStorage.setItem(_0x3a2b[2] + usuarioEmail, JSON.stringify(payloadVendas));
+    if (filaSync.length) localStorage.setItem(CHAVE_FILA_SYNC + usuarioEmail, JSON.stringify(filaSync));
+    else localStorage.removeItem(CHAVE_FILA_SYNC + usuarioEmail);
+    atualizarAvisoSync();
+  }
 
-    if (API_NUVEM_URL) {
-      let bodyData = { vendas: payloadVendas, usuario_id: usuarioEmail, token: usuarioToken, atendimentosMes: clientesAtendidosMes, origemHost: ORIGEM_HOST };
-      if (dadosFechamentoExtra) {
-        bodyData.fechar_mes = dadosFechamentoExtra.fechar_mes;
-        bodyData.vendasRestantes = dadosFechamentoExtra.vendasRestantes;
-      }
+  // Sai da conta: a fila continua guardada no aparelho (por e-mail) e volta no próximo login.
+  function pausarFilaSync() {
+    clearTimeout(filaSyncTimer);
+    filaSync = [];
+    filaSyncFalhas = 0;
+    lerNuvemAoEsvaziarFila = false;
+    atualizarAvisoSync();
+  }
 
-      fetch(API_NUVEM_URL, {
+  function enfileirarSync(corpo) {
+    versaoLocal++;
+    const ultimo = filaSync[filaSync.length - 1];
+    const ultimoEstaSendoEnviado = filaSyncEnviando && filaSync.length === 1;
+    const soVendas = (item) => item && item.vendas && !item.fechar_mes;
+    if (soVendas(corpo) && soVendas(ultimo) && !ultimoEstaSendoEnviado) {
+      // Dois envios de vendas seguidos viram um: vale a lista mais nova, sem perder as
+      // exclusões que estavam no anterior (a venda excluída já saiu da lista local).
+      const ids = new Set(corpo.vendas.map(v => String(v.id)));
+      corpo.vendas = corpo.vendas.concat(ultimo.vendas.filter(v => v.excluidoApp && !ids.has(String(v.id))));
+      filaSync[filaSync.length - 1] = corpo;
+    } else {
+      filaSync.push(corpo);
+    }
+    salvarFilaSync();
+    processarFilaSync();
+  }
+
+  async function enviarItemSync(item) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
+    try {
+      const res = await fetch(API_NUVEM_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(bodyData),
-        redirect: 'follow'
-      }).catch(err => console.log('Erro sync nuvem:', err));
+        body: JSON.stringify({ ...item, usuario_id: usuarioEmail, token: usuarioToken, origemHost: ORIGEM_HOST }),
+        redirect: 'follow',
+        signal: controller.signal
+      });
+      return await res.json();
+    } finally {
+      clearTimeout(timeoutId);
     }
+  }
+
+  async function processarFilaSync() {
+    if (filaSyncEnviando || !filaSync.length || !usuarioEmail || !usuarioToken) return;
+    clearTimeout(filaSyncTimer);
+    filaSyncEnviando = true;
+    const emailDoEnvio = usuarioEmail;
+    let sessaoVencida = false;
+
+    while (filaSync.length && usuarioEmail === emailDoEnvio) {
+      let resposta = null;
+      try { resposta = await enviarItemSync(filaSync[0]); } catch (err) { resposta = null; }
+      if (usuarioEmail !== emailDoEnvio) break; // saiu da conta durante o envio: a fila guardada reenvia depois
+
+      if (resposta && resposta.status === 'success') {
+        filaSync.shift();
+        filaSyncFalhas = 0;
+        salvarFilaSync();
+        continue;
+      }
+      if (resposta && /sess[aã]o inv[aá]lida/i.test(resposta.message || '')) { sessaoVencida = true; break; }
+
+      filaSyncFalhas++;
+      filaSyncTimer = setTimeout(processarFilaSync, Math.min(60000, 3000 * Math.pow(2, filaSyncFalhas - 1)));
+      break;
+    }
+
+    filaSyncEnviando = false;
+    if (sessaoVencida) {
+      bloquearAcesso();
+      exibirMensagemAuth("Sua sessão expirou. Entre de novo: suas alterações estão guardadas neste aparelho e serão enviadas.", "msg-error", false);
+      return;
+    }
+    atualizarAvisoSync();
+    if (usuarioEmail && usuarioEmail !== emailDoEnvio) { setTimeout(processarFilaSync, 0); return; }
+    if (!filaSync.length && usuarioEmail && lerNuvemAoEsvaziarFila) {
+      lerNuvemAoEsvaziarFila = false;
+      carregarVendasNuvemSilencioso();
+      carregarHistoricoNuvemSilencioso();
+    }
+  }
+
+  // O aviso só aparece quando um envio falhou (ou o aparelho está sem internet) e ainda há
+  // alteração na fila. Envio normal não mostra nada.
+  function atualizarAvisoSync() {
+    const aviso = document.getElementById('aviso-sync');
+    if (!aviso) return;
+    const mostrar = !!usuarioEmail && filaSync.length > 0 && (filaSyncFalhas > 0 || navigator.onLine === false);
+    aviso.style.display = mostrar ? 'flex' : 'none';
+    if (mostrar) aviso.textContent = navigator.onLine === false
+      ? 'Sem internet. Envio pendente.'
+      : 'Envio pendente. Toque para tentar.';
+  }
+
+  function tentarEnviarAgora() {
+    clearTimeout(filaSyncTimer);
+    processarFilaSync();
+  }
+
+  function envioPendenteBloqueiaRestauracao() {
+    if (!filaSync.length) return false;
+    alert("Ainda há alterações suas sendo enviadas para a nuvem. Tente de novo em alguns instantes.");
+    tentarEnviarAgora();
+    return true;
+  }
+
+  window.addEventListener('online', () => { atualizarAvisoSync(); tentarEnviarAgora(); });
+  window.addEventListener('offline', atualizarAvisoSync);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && filaSync.length) tentarEnviarAgora(); });
+
+  function sincronizarNuvem(vendasParaSincronizar, dadosFechamentoExtra) {
+    if (!usuarioEmail) return;
+    const payloadVendas = (vendasParaSincronizar || vendas).slice();
+    localStorage.setItem(_0x3a2b[2] + usuarioEmail, JSON.stringify(payloadVendas));
+
+    const corpo = { vendas: payloadVendas, atendimentosMes: clientesAtendidosMes };
+    if (dadosFechamentoExtra) {
+      corpo.fechar_mes = dadosFechamentoExtra.fechar_mes;
+      corpo.vendasRestantes = dadosFechamentoExtra.vendasRestantes;
+    }
+    enfileirarSync(corpo);
+  }
+
+  // A resposta da nuvem só substitui os dados do aparelho se nada mudou aqui desde o pedido
+  // e não há alteração esperando envio.
+  function leituraDaNuvemAindaVale(emailDoPedido, versaoDoPedido) {
+    return usuarioEmail === emailDoPedido && versaoLocal === versaoDoPedido && filaSync.length === 0;
   }
 
   function carregarVendasNuvemSilencioso(callback) {
     if (API_NUVEM_URL && usuarioEmail) {
+      const emailDoPedido = usuarioEmail, versaoDoPedido = versaoLocal;
       fetch(API_NUVEM_URL + '?usuario_id=' + encodeURIComponent(usuarioEmail) + '&token=' + encodeURIComponent(usuarioToken) + '&origemHost=' + encodeURIComponent(ORIGEM_HOST), { redirect: 'follow' })
         .then(res => res.json())
         .then(data => {
+          if (!leituraDaNuvemAindaVale(emailDoPedido, versaoDoPedido)) return;
           if (data && data.vendas) {
             vendas = data.vendas;
             localStorage.setItem(_0x3a2b[2] + usuarioEmail, JSON.stringify(vendas));
@@ -1872,9 +2033,11 @@
 
   function carregarHistoricoNuvemSilencioso(callback) {
     if (API_NUVEM_URL && usuarioEmail) {
+      const emailDoPedido = usuarioEmail, versaoDoPedido = versaoLocal;
       fetch(API_NUVEM_URL + '?action=buscar_historico&usuario_id=' + encodeURIComponent(usuarioEmail) + '&token=' + encodeURIComponent(usuarioToken) + '&origemHost=' + encodeURIComponent(ORIGEM_HOST), { redirect: 'follow' })
         .then(res => res.json())
         .then(data => {
+          if (!leituraDaNuvemAindaVale(emailDoPedido, versaoDoPedido)) return;
           if (data && data.historico) {
             historicoMeses = data.historico;
             localStorage.setItem(_0x3a2b[3] + usuarioEmail, JSON.stringify(historicoMeses));
@@ -1884,6 +2047,7 @@
         }).catch(err => console.log('Erro ao buscar historico nuvem'));
     }
   }
+  // ==================== FIM ENVIO PARA A NUVEM ====================
 
   function fecharMesAtual() {
     if (vendas.length === 0) {
@@ -1948,7 +2112,7 @@
 
       renderHistorico();
       render();
-      alert('Mês ' + mesReferencia + ' fechado e persistido com sucesso!');
+      alert('Mês ' + mesReferencia + ' fechado com sucesso!');
     }
   }
 
@@ -1960,14 +2124,7 @@
       localStorage.setItem(_0x3a2b[3] + usuarioEmail, JSON.stringify(historicoMeses));
       renderHistorico();
 
-      if (API_NUVEM_URL && usuarioEmail) {
-        fetch(API_NUVEM_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ excluir_mes_ref: refMes, usuario_id: usuarioEmail, token: usuarioToken, origemHost: ORIGEM_HOST }),
-          redirect: 'follow'
-        }).catch(err => console.log('Erro ao excluir mês da nuvem:', err));
-      }
+      if (usuarioEmail) enfileirarSync({ excluir_mes_ref: refMes });
     }
   }
 
