@@ -1,4 +1,4 @@
-const CACHE_NAME = 'radar-vendedor-rico-v22';
+const CACHE_NAME = 'radar-vendedor-rico-v23';
 const urlsToCache = [
   '/Radar-Vendedor-Rico-PRO/',
   '/Radar-Vendedor-Rico-PRO/index.html',

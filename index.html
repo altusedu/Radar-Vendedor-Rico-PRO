@@ -243,6 +243,12 @@
       display: flex; flex-direction: column; gap: 14px; max-height: 90vh; overflow-y: auto;
     }
     .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .fechar-mes-resumo { background: var(--bg-dark); border: 1px solid var(--border-color); border-radius: 10px; padding: 12px 14px; font-size: 0.88rem; line-height: 1.5; color: var(--text-main); }
+    .fechar-mes-resumo div { display: flex; justify-content: space-between; gap: 12px; }
+    .fechar-mes-resumo div span:first-child { color: var(--text-muted); white-space: nowrap; }
+    .fechar-mes-resumo div span:last-child { font-weight: 700; text-align: right; white-space: nowrap; }
+    .fechar-mes-resumo p { margin: 8px 0 0; font-size: 0.8rem; color: var(--text-muted); }
+    .fechar-mes-resumo p.alerta { color: var(--accent-yellow); }
 
     .main-content { flex: 1; padding: 30px; overflow-y: auto; width: 100%; display: flex; flex-direction: column; justify-content: space-between; }
     .content-body { flex: 1; }
@@ -539,6 +545,23 @@
     <div style="display: flex; gap: 10px; margin-top: 15px;">
       <button type="button" class="btn-auth" style="background: var(--border-color); color: var(--text-main);" onclick="document.getElementById('modal-relatorio-mensal').style.display='none'">Cancelar</button>
       <button type="button" class="btn-auth" onclick="gerarRelatorioMensalSelecionado()">Gerar Relatório Excel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Fechamento do Mês -->
+<div class="modal-overlay-onboarding" id="modal-fechar-mes" style="display: none; z-index: 100002;">
+  <div class="modal-card-onboarding" style="max-width: 460px;">
+    <h3 style="color: var(--accent-orange); margin: 0;">🔒 Fechar o mês</h3>
+    <p style="color: var(--text-muted); font-size: 0.88rem; margin: 0;">De qual mês são estas comissões?</p>
+    <div class="modal-grid">
+      <div class="input-field"><label for="fechar-mes-mes">Mês</label><select id="fechar-mes-mes" onchange="atualizarResumoFechamento()"></select></div>
+      <div class="input-field"><label for="fechar-mes-ano">Ano</label><select id="fechar-mes-ano" onchange="atualizarResumoFechamento()"></select></div>
+    </div>
+    <div id="fechar-mes-resumo" class="fechar-mes-resumo"></div>
+    <div style="display: flex; gap: 10px; margin-top: 4px;">
+      <button type="button" class="btn-auth" style="background: var(--border-color); color: var(--text-main);" onclick="fecharModalFecharMes()">Cancelar</button>
+      <button type="button" class="btn-auth" onclick="confirmarFechamentoMes()">Fechar mês</button>
     </div>
   </div>
 </div>
@@ -907,7 +930,7 @@
         <p class="subtitle">Descubra exatamente quantas vendas e quantos atendimentos diários você precisa fazer.</p>
         <div class="form-container">
           <div class="form-grid">
-            <div class="input-field"><label for="meta-mensal">Meta de Comissão no Bolso (R$)</label><input type="text" id="meta-mensal" inputmode="decimal" value="R$ 10.000,00" oninput="mascaraMoedaInput(this); calcularMeta()"></div>
+            <div class="input-field"><label for="meta-mensal">Meta de Comissão no Bolso (R$)</label><input type="text" id="meta-mensal" inputmode="decimal" value="R$ 10.000,00" oninput="mascaraMoedaInput(this); salvarMetaLocal(); calcularMeta()"></div>
             <div class="input-field"><label for="dias-uteis">Dias Úteis Restantes</label><input type="number" id="dias-uteis" inputmode="numeric" value="20" oninput="calcularMeta()"></div>
             <div class="input-field"><label for="atendimentos-totais">Total de Leads Atendidos no Mês</label><input type="number" id="atendimentos-totais" inputmode="numeric" disabled style="background-color: var(--border-color); color: var(--text-muted);" title="Espelha o contador 'Clientes Atendidos no Mês' da aba Radar"></div>
           </div>
@@ -1047,8 +1070,13 @@
 
   // ==================== NOVIDADES DA VERSÃO (CHANGELOG) ====================
   // Para anunciar uma novidade nova: atualize APP_VERSION e adicione uma entrada no topo do CHANGELOG.
-  const APP_VERSION = "2026.10.21";
+  const APP_VERSION = "2026.11.11";
   const CHANGELOG = [
+    { versao: "2026.11.11", titulo: "Sua meta fica salva e fechar o mês ficou mais fácil", itens: [
+      "Sua meta de comissão agora fica salva: não precisa digitar de novo a cada acesso",
+      "Para fechar o mês, é só escolher o mês e o ano na lista",
+      "Sem internet? Suas vendas ficam guardadas no aparelho e são enviadas sozinhas depois"
+    ]},
     { versao: "2026.10.21", titulo: "Acelerador de Comissões virou playbook", itens: [
       "20 dicas de ouro, cada uma com o passo a passo na prática",
       "Capítulo 01: Ticket Médio. Capítulo 02: Taxa de Conversão",
@@ -1751,12 +1779,13 @@
   }
 
   function inicializarApp() {
-    document.getElementById('data-venda').value = new Date().toISOString().split('T')[0];
+    document.getElementById('data-venda').value = hojeIsoLocal();
     document.getElementById('dias-uteis').value = calcularDiasUteisRestantesAutomatico();
     
     vendas = JSON.parse(localStorage.getItem(_0x3a2b[2] + usuarioEmail)) || [];
     historicoMeses = JSON.parse(localStorage.getItem(_0x3a2b[3] + usuarioEmail)) || [];
     clientesAtendidosMes = parseInt(localStorage.getItem(_0x3a2b[8] + usuarioEmail), 10) || 0;
+    carregarMetaSalva();
     render();
     renderAtendimentos();
 
@@ -1771,6 +1800,35 @@
       carregarVendasNuvemSilencioso();
       carregarHistoricoNuvemSilencioso();
     }
+  }
+
+  // Data de hoje no fuso do aparelho. (toISOString usa UTC: depois das 21h no Brasil já devolvia o dia seguinte.)
+  function hojeIsoLocal() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+
+  // A meta fica guardada no aparelho, por aluno. Em aparelho novo (sem meta guardada), entra a
+  // meta do fechamento mais recente; sem nenhuma das duas, o valor padrão do campo.
+  const CHAVE_META = 'meta_radar_';
+  const META_PADRAO = 'R$ 10.000,00';
+
+  function metaGuardada() {
+    const valor = parseFloat(localStorage.getItem(CHAVE_META + usuarioEmail));
+    return valor > 0 ? valor : 0;
+  }
+
+  function salvarMetaLocal() {
+    if (usuarioEmail) localStorage.setItem(CHAVE_META + usuarioEmail, String(parseMoedaFloat(document.getElementById('meta-mensal').value)));
+  }
+
+  function carregarMetaSalva() {
+    let valor = metaGuardada();
+    if (!valor) {
+      const ultimoComMeta = historicoMeses.find(h => Number(h.metaMensal) > 0);
+      valor = ultimoComMeta ? Number(ultimoComMeta.metaMensal) : 0;
+    }
+    document.getElementById('meta-mensal').value = valor > 0 ? formatarMoeda(valor) : META_PADRAO;
   }
 
   function renderAtendimentos() {
@@ -2042,6 +2100,7 @@
             historicoMeses = data.historico;
             localStorage.setItem(_0x3a2b[3] + usuarioEmail, JSON.stringify(historicoMeses));
             renderHistorico();
+            if (!metaGuardada()) { carregarMetaSalva(); calcularMeta(); }
             if (callback) callback();
           }
         }).catch(err => console.log('Erro ao buscar historico nuvem'));
@@ -2049,75 +2108,135 @@
   }
   // ==================== FIM ENVIO PARA A NUVEM ====================
 
+  const NOMES_MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+  // Mês sugerido no fechamento: o mês em que caiu a maioria das vendas pagas (quem fecha no
+  // começo do mês seguinte recebe a sugestão certa); sem datas, o mês atual.
+  function mesSugeridoParaFechamento(vendasPagas) {
+    const contagem = {};
+    vendasPagas.forEach(v => {
+      const m = /^(\d{4})-(\d{2})/.exec(String(v.dataVenda || ''));
+      if (m) contagem[m[1] + '-' + m[2]] = (contagem[m[1] + '-' + m[2]] || 0) + 1;
+    });
+    const maisComum = Object.keys(contagem).sort((a, b) => contagem[b] - contagem[a] || b.localeCompare(a))[0];
+    if (maisComum) return { ano: Number(maisComum.slice(0, 4)), mes: Number(maisComum.slice(5, 7)) - 1 };
+    const hoje = new Date();
+    return { ano: hoje.getFullYear(), mes: hoje.getMonth() };
+  }
+
+  // "Novembro/2026"; se esse mês já foi fechado, "Novembro/2026 (2)", para os dois fechamentos
+  // não se confundirem na hora de excluir ou de gerar relatório.
+  function nomeDoFechamento(mes, ano) {
+    const base = NOMES_MESES[mes] + '/' + ano;
+    const existentes = new Set(historicoMeses.map(h => String(h.refMes).trim().toLowerCase()));
+    if (!existentes.has(base.toLowerCase())) return base;
+    let n = 2;
+    while (existentes.has((base + ' (' + n + ')').toLowerCase())) n++;
+    return base + ' (' + n + ')';
+  }
+
+  function dadosDoFechamento() {
+    const vendasPagas = vendas.filter(v => v.status === 'Pago');
+    const vendasPendentes = vendas.filter(v => v.status === 'Pendente');
+    const totalComissao = vendasPagas.reduce((acc, v) => acc + v.comissao, 0);
+    const totalVendasVal = vendasPagas.reduce((acc, v) => acc + v.valor, 0);
+    // Meta registrada = o valor que está no campo da aba Metas no momento do fechamento.
+    const metaMensal = parseMoedaFloat(document.getElementById('meta-mensal').value);
+    return {
+      vendasPagas, vendasPendentes, totalComissao, metaMensal,
+      ticketMedio: vendasPagas.length ? (totalVendasVal / vendasPagas.length) : 0,
+      percentualAtingido: metaMensal > 0 ? Math.round((totalComissao / metaMensal) * 1000) / 10 : null
+    };
+  }
+
   function fecharMesAtual() {
     if (vendas.length === 0) {
       alert('Não há vendas no Radar para fechar o mês!');
       return;
     }
-
-    const vendasPagas = vendas.filter(v => v.status === 'Pago');
-    const vendasPendentes = vendas.filter(v => v.status === 'Pendente');
-
-    if (vendasPagas.length === 0) {
+    const d = dadosDoFechamento();
+    if (d.vendasPagas.length === 0) {
       alert('Você não possui nenhuma venda com status "Pago" para fechar o mês!');
       return;
     }
 
-    if (vendasPendentes.length > 0) {
-      alert('⚠️ Atenção: Existem ' + vendasPendentes.length + ' venda(s) com status "Pendente". Elas permanecerão ativas no radar até serem pagas!');
-    }
-
-    const mesReferencia = prompt('Digite o Mês/Ano de referência (ex: Setembro/2026):');
-    if (!mesReferencia || mesReferencia.trim() === '') return;
-
-    let totalComissao = vendasPagas.reduce((acc, v) => acc + v.comissao, 0);
-    let totalVendasVal = vendasPagas.reduce((acc, v) => acc + v.valor, 0);
-    let qtdVendas = vendasPagas.length;
-    let ticketMedio = qtdVendas ? (totalVendasVal / qtdVendas) : 0;
-    let taxaConversao = document.getElementById('radar-taxa-conversao').innerText;
-    let totalAtendimentos = clientesAtendidosMes;
-    // Meta registrada = o valor que está no campo da aba Metas no momento do fechamento.
-    let metaMensal = parseMoedaFloat(document.getElementById('meta-mensal').value);
-    let percentualAtingido = metaMensal > 0 ? Math.round((totalComissao / metaMensal) * 1000) / 10 : null;
-
-    const registroFechamento = {
-      refMes: mesReferencia.trim(),
-      totalComissao: totalComissao,
-      totalVendas: qtdVendas,
-      ticketMedio: ticketMedio,
-      taxaConversao: taxaConversao,
-      totalAtendimentos: totalAtendimentos,
-      metaMensal: metaMensal,
-      percentualAtingido: percentualAtingido,
-      vendasDetalhes: [...vendasPagas]
-    };
-
-    const resumoMeta = metaMensal > 0
-      ? '\n\nMeta do mês: ' + formatarMoeda(metaMensal) + '\nRealizado: ' + formatarMoeda(totalComissao) + ' (' + formatarPercentualMeta(percentualAtingido) + ' da meta)\n\nSe a meta não estiver correta, cancele e ajuste na aba Metas antes de fechar.'
-      : '\n\n⚠️ Nenhuma meta definida na aba Metas — o fechamento será salvo sem meta.';
-
-    if (confirm('Confirma o fechamento do mês ' + mesReferencia + '?' + resumoMeta)) {
-      vendas = [...vendasPendentes];
-      clientesAtendidosMes = 0;
-      persistirAtendimentos();
-      renderAtendimentos();
-
-      historicoMeses.unshift({ ...registroFechamento, dataFechamento: new Date().toISOString() });
-      localStorage.setItem(_0x3a2b[3] + usuarioEmail, JSON.stringify(historicoMeses));
-
-      sincronizarNuvem(vendas, {
-        fechar_mes: registroFechamento,
-        vendasRestantes: vendas
-      });
-
-      renderHistorico();
-      render();
-      alert('Mês ' + mesReferencia + ' fechado com sucesso!');
-    }
+    const sugerido = mesSugeridoParaFechamento(d.vendasPagas);
+    const anoAtual = new Date().getFullYear();
+    const anos = [anoAtual - 1, anoAtual];
+    if (anos.indexOf(sugerido.ano) === -1) anos.unshift(sugerido.ano);
+    document.getElementById('fechar-mes-mes').innerHTML = NOMES_MESES.map((nome, i) => '<option value="' + i + '"' + (i === sugerido.mes ? ' selected' : '') + '>' + nome + '</option>').join('');
+    document.getElementById('fechar-mes-ano').innerHTML = anos.map(a => '<option value="' + a + '"' + (a === sugerido.ano ? ' selected' : '') + '>' + a + '</option>').join('');
+    atualizarResumoFechamento();
+    document.getElementById('modal-fechar-mes').style.display = 'flex';
   }
 
-  function excluirMesHistorico(refMes, event) {
+  function atualizarResumoFechamento() {
+    const d = dadosDoFechamento();
+    const mes = Number(document.getElementById('fechar-mes-mes').value);
+    const ano = Number(document.getElementById('fechar-mes-ano').value);
+    const nome = nomeDoFechamento(mes, ano);
+    const linha = (rotulo, valor) => '<div><span>' + rotulo + '</span><span>' + valor + '</span></div>';
+    let html = linha('Vendas pagas', d.vendasPagas.length) + linha('Comissão do mês', formatarMoeda(d.totalComissao));
+    if (d.metaMensal > 0) {
+      html += linha('Meta do mês', formatarMoeda(d.metaMensal)) + linha('Atingido', formatarPercentualMeta(d.percentualAtingido));
+      html += '<p>Se a meta não estiver correta, cancele e ajuste na aba Metas antes de fechar.</p>';
+    } else {
+      html += '<p class="alerta">Nenhuma meta definida na aba Metas: o fechamento será salvo sem meta.</p>';
+    }
+    if (d.vendasPendentes.length > 0) {
+      html += '<p class="alerta">' + d.vendasPendentes.length + ' venda(s) com status "Pendente" continuam no radar até serem pagas.</p>';
+    }
+    if (nome !== NOMES_MESES[mes] + '/' + ano) {
+      html += '<p class="alerta">Você já fechou ' + NOMES_MESES[mes] + '/' + ano + '. Este fechamento será salvo como ' + escaparTextoEvolucao(nome) + '.</p>';
+    }
+    document.getElementById('fechar-mes-resumo').innerHTML = html;
+  }
+
+  function fecharModalFecharMes() {
+    document.getElementById('modal-fechar-mes').style.display = 'none';
+  }
+
+  function confirmarFechamentoMes() {
+    const d = dadosDoFechamento();
+    if (d.vendasPagas.length === 0) { fecharModalFecharMes(); return; }
+    const mesReferencia = nomeDoFechamento(Number(document.getElementById('fechar-mes-mes').value), Number(document.getElementById('fechar-mes-ano').value));
+
+    const registroFechamento = {
+      refMes: mesReferencia,
+      totalComissao: d.totalComissao,
+      totalVendas: d.vendasPagas.length,
+      ticketMedio: d.ticketMedio,
+      taxaConversao: document.getElementById('radar-taxa-conversao').innerText,
+      totalAtendimentos: clientesAtendidosMes,
+      metaMensal: d.metaMensal,
+      percentualAtingido: d.percentualAtingido,
+      vendasDetalhes: [...d.vendasPagas]
+    };
+
+    vendas = [...d.vendasPendentes];
+    clientesAtendidosMes = 0;
+    persistirAtendimentos();
+    renderAtendimentos();
+
+    historicoMeses.unshift({ ...registroFechamento, dataFechamento: new Date().toISOString() });
+    localStorage.setItem(_0x3a2b[3] + usuarioEmail, JSON.stringify(historicoMeses));
+
+    sincronizarNuvem(vendas, {
+      fechar_mes: registroFechamento,
+      vendasRestantes: vendas
+    });
+
+    fecharModalFecharMes();
+    renderHistorico();
+    render();
+    alert('Mês ' + mesReferencia + ' fechado com sucesso!');
+  }
+
+  function excluirMesHistorico(indice, event) {
     if (event) event.stopPropagation();
+    const fechamento = historicoMeses[indice];
+    if (!fechamento) return;
+    const refMes = fechamento.refMes;
     
     if (confirm('Tem certeza que deseja excluir o fechamento do mês "' + refMes + '"?\n\nℹ️ Caso queira recuperar este mês no futuro, utilize a restauração de histórico na aba de Segurança.')) {
       historicoMeses = historicoMeses.filter(h => h.refMes !== refMes);
@@ -2148,12 +2267,12 @@
         htmlTabelaVendas = '<div class="table-responsive"><table><thead><tr><th>Data</th><th>Cliente</th><th>Valor</th><th>%</th><th>Comissão</th><th>Status</th></tr></thead><tbody>';
         h.vendasDetalhes.forEach(vd => {
           htmlTabelaVendas += '<tr>' +
-            '<td>' + formatarDataBR(vd.dataVenda) + '</td>' +
-            '<td><b>' + vd.cliente + '</b></td>' +
+            '<td>' + escaparTextoEvolucao(formatarDataBR(vd.dataVenda)) + '</td>' +
+            '<td><b>' + escaparTextoEvolucao(vd.cliente) + '</b></td>' +
             '<td>' + formatarMoeda(vd.valor) + '</td>' +
-            '<td>' + vd.porcentagem + '%</td>' +
+            '<td>' + escaparTextoEvolucao(vd.porcentagem) + '%</td>' +
             '<td style="color:var(--accent-orange); font-weight:bold;">' + formatarMoeda(vd.comissao) + '</td>' +
-            '<td><span class="badge ' + (vd.status === 'Pago' ? 'badge-pago' : 'badge-pendente') + '">' + vd.status + '</span></td>' +
+            '<td><span class="badge ' + (vd.status === 'Pago' ? 'badge-pago' : 'badge-pendente') + '">' + escaparTextoEvolucao(vd.status) + '</span></td>' +
             '</tr>';
         });
         htmlTabelaVendas += '</tbody></table></div>';
@@ -2164,10 +2283,10 @@
       const card = document.createElement('div');
       card.className = 'historico-card';
       card.innerHTML = '<div class="historico-header" onclick="toggleAccordion(' + index + ')">' +
-        '<div><h3 style="margin:0 0 4px 0; color:var(--accent-orange);">' + h.refMes + '</h3><small style="color:var(--text-muted);">Fechado em: ' + (h.dataFechamento ? formatarDataBR(h.dataFechamento) : '-') + '</small></div>' +
+        '<div><h3 style="margin:0 0 4px 0; color:var(--accent-orange);">' + escaparTextoEvolucao(h.refMes) + '</h3><small style="color:var(--text-muted);">Fechado em: ' + (h.dataFechamento ? formatarDataBR(h.dataFechamento) : '-') + '</small></div>' +
         '<div style="display:flex; align-items:center; gap:15px;">' +
-        '<div style="text-align:right;"><div style="font-size:1.2rem; font-weight:bold; color:var(--text-main);">' + formatarMoeda(h.totalComissao) + '</div><small style="color:var(--text-muted);">' + h.totalVendas + ' vendas | Conv: ' + h.taxaConversao + ' | Atendidos: ' + (h.totalAtendimentos || 0) + '</small>' + htmlMeta + '</div>' +
-        '<button class="icon-btn btn-delete" title="Excluir Fechamento" onclick="excluirMesHistorico(\'' + h.refMes + '\', event)">🗑️</button>' +
+        '<div style="text-align:right;"><div style="font-size:1.2rem; font-weight:bold; color:var(--text-main);">' + formatarMoeda(h.totalComissao) + '</div><small style="color:var(--text-muted);">' + escaparTextoEvolucao(h.totalVendas) + ' vendas | Conv: ' + escaparTextoEvolucao(h.taxaConversao) + ' | Atendidos: ' + escaparTextoEvolucao(h.totalAtendimentos || 0) + '</small>' + htmlMeta + '</div>' +
+        '<button class="icon-btn btn-delete" title="Excluir Fechamento" onclick="excluirMesHistorico(' + index + ', event)">🗑️</button>' +
         '</div>' +
         '</div>' +
         '<div class="historico-body" id="acc-body-' + index + '">' +
@@ -3385,9 +3504,9 @@
         const isChecked = selecionadosMass.has(v.id) ? 'checked' : '';
         const tr = document.createElement('tr');
         tr.innerHTML = '<td style="text-align: center;"><input type="checkbox" class="check-venda" value="' + v.id + '" ' + isChecked + ' onchange="toggleSelectVenda(' + v.id + ', this)"></td>' +
-          '<td>' + formatarDataBR(v.dataVenda) + '</td><td><b>' + v.cliente + '</b></td><td>' + formatarMoeda(v.valor) + '</td>' +
-          '<td>' + v.porcentagem + '%</td><td style="color: var(--accent-orange); font-weight: bold;">' + formatarMoeda(v.comissao) + '</td>' +
-          '<td><span class="badge ' + (v.status === 'Pago' ? 'badge-pago' : 'badge-pendente') + '">' + v.status + '</span></td>' +
+          '<td>' + escaparTextoEvolucao(formatarDataBR(v.dataVenda)) + '</td><td><b>' + escaparTextoEvolucao(v.cliente) + '</b></td><td>' + formatarMoeda(v.valor) + '</td>' +
+          '<td>' + escaparTextoEvolucao(v.porcentagem) + '%</td><td style="color: var(--accent-orange); font-weight: bold;">' + formatarMoeda(v.comissao) + '</td>' +
+          '<td><span class="badge ' + (v.status === 'Pago' ? 'badge-pago' : 'badge-pendente') + '">' + escaparTextoEvolucao(v.status) + '</span></td>' +
           '<td><div class="action-btn-group">' +
           (v.status === 'Pendente' ? '<button class="icon-btn btn-pay" title="Baixa" onclick="darBaixa(' + v.id + ')">✓</button>' : '') +
           '<button class="icon-btn btn-edit" title="Editar" onclick="editarVenda(' + v.id + ')">✏️</button>' +
@@ -3398,7 +3517,7 @@
       if (v.status === 'Pendente') {
         pendentesCount++;
         const trP = document.createElement('tr');
-        trP.innerHTML = '<td>' + formatarDataBR(v.dataVenda) + '</td><td><b>' + v.cliente + '</b></td><td>' + formatarMoeda(v.valor) + '</td>' +
+        trP.innerHTML = '<td>' + escaparTextoEvolucao(formatarDataBR(v.dataVenda)) + '</td><td><b>' + escaparTextoEvolucao(v.cliente) + '</b></td><td>' + formatarMoeda(v.valor) + '</td>' +
           '<td style="color: var(--accent-yellow); font-weight: bold;">' + formatarMoeda(v.comissao) + '</td>' +
           '<td><button class="icon-btn btn-pay" style="padding: 8px 16px;" onclick="darBaixa(' + v.id + ')">✓ Confirmar</button></td>';
         listaPendentes.appendChild(trP);
@@ -3614,8 +3733,8 @@
     historicoMeses.forEach((h, idx) => {
       const div = document.createElement('div');
       div.style.cssText = "display: flex; align-items: center; gap: 8px; font-size: 0.88rem;";
-      div.innerHTML = `<input type="checkbox" class="check-mes-item" value="${h.refMes}" id="mes_chk_${idx}">` +
-                      `<label for="mes_chk_${idx}" style="cursor: pointer;"><b>${h.refMes}</b> (${h.totalVendas} vendas - ${formatarMoeda(h.totalComissao)})</label>`;
+      div.innerHTML = `<input type="checkbox" class="check-mes-item" value="${escaparTextoEvolucao(h.refMes)}" id="mes_chk_${idx}">` +
+                      `<label for="mes_chk_${idx}" style="cursor: pointer;"><b>${escaparTextoEvolucao(h.refMes)}</b> (${escaparTextoEvolucao(h.totalVendas)} vendas - ${formatarMoeda(Number(h.totalComissao) || 0)})</label>`;
       container.appendChild(div);
     });
 
